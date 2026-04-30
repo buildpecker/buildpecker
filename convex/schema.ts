@@ -6,7 +6,8 @@ export default defineSchema({
 		name: v.string(),
 		externalId: v.string(),
 		authToken: v.string(),
-	}).index("by_externalId", ["externalId"]),
+	}).index("by_externalId", ["externalId"])
+		.index("by_authToken", ["authToken"]),
 	projects: defineTable({
 		name: v.string()
 	}),
@@ -14,7 +15,8 @@ export default defineSchema({
 		name: v.string(),
 		cpu: v.string(),
 		memory: v.string(),
-		hostname: v.string()
+		hostname: v.string(),
+		ip: v.string()
 	}),
 	deployments: defineTable({
 		name: v.string(),

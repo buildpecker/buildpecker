@@ -1,0 +1,16 @@
+import { query } from "../_generated/server";
+import { v } from "convex/values";
+
+export const findOneByAuthToken = query({
+	args: { authToken: v.string() },
+	handler: async (ctx, args) => {
+		const results = await ctx.db
+			.query("users")
+			.withIndex("by_authToken", (q) => q.eq("authToken", args.authToken))
+			.collect();
+
+		if (results.length !== 1) throw new Error(`Expected exactly 1 item, but received ${results.length} items`);
+
+		return results[0];
+	}
+})
