@@ -9,10 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.2.8",
+    "convex": "^1.36.1",
     "next": "16.2.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "supabase": "^2.95.6"
+    "svix": "^1.92.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -30,6 +32,8 @@
     "unrs-resolver"
   ],
   "trustedDependencies": [
+    "@clerk/shared",
+    "esbuild",
     "sharp",
     "unrs-resolver"
   ]
