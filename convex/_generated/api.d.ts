@@ -9,6 +9,9 @@
  */
 
 import type * as http from "../http.js";
+import type * as lib_redis from "../lib/redis.js";
+import type * as nodes_actions from "../nodes/actions.js";
+import type * as nodes_mutations from "../nodes/mutations.js";
 import type * as users_mutations from "../users/mutations.js";
 import type * as users_queries from "../users/queries.js";
 
@@ -20,6 +23,9 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   http: typeof http;
+  "lib/redis": typeof lib_redis;
+  "nodes/actions": typeof nodes_actions;
+  "nodes/mutations": typeof nodes_mutations;
   "users/mutations": typeof users_mutations;
   "users/queries": typeof users_queries;
 }>;

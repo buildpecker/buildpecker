@@ -9,24 +9,32 @@ export default defineSchema({
 	}).index("by_externalId", ["externalId"])
 		.index("by_authToken", ["authToken"]),
 	projects: defineTable({
-		name: v.string()
+		name: v.string(),
+		ownerId: v.id("users"),
+		framework: v.string(),
+		defaultBranch: v.string(),
+		repoUrl: v.string()
 	}),
 	nodes: defineTable({
+		userId: v.id("users"),
+		token: v.string(),
 		name: v.string(),
-		cpu: v.string(),
-		memory: v.string(),
+		cpuCores: v.number(),
+		memoryMb: v.number(),
+		diskMb: v.number(),
 		hostname: v.string(),
-		ip: v.string()
 	}),
 	deployments: defineTable({
 		name: v.string(),
-		node_id: v.id("nodes"),
-		project_id: v.id("projects"),
-		github_url: v.string()
+		nodeId: v.id("nodes"),
+		projectId: v.id("projects"),
+		imageUri: v.string(),
+		branch: v.string(),
+		sha: v.string(),
 	}),
 	environments: defineTable({
 		name: v.string(),
-		deployment_id: v.id("deployments"),
+		deploymentId: v.id("deployments"),
 		variables: v.record(v.string(), v.string()),
 	})
 });
