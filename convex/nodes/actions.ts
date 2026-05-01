@@ -5,6 +5,7 @@ import { action } from "../_generated/server";
 import { api, internal } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 import redis from "../lib/redis";
+import { hash } from "node:crypto";
 
 export const createRegistrationToken = action({
 	args: {},
@@ -40,11 +41,13 @@ export const registerNode = action({
 			.map(b => b.toString(16).padStart(2, "0"))
 			.join("");
 
+		const tokenHash = hash('sha256', nodeToken)
+
 		const idx = Math.floor(Math.random() * 5000);
 
 		const nodeId: Id<"nodes"> = await ctx.runMutation(internal.nodes.mutations.insertNode, {
 			userId,
-			token: nodeToken,
+			tokenHash: tokenHash,
 			name: `Node ${idx}`,
 			cpuCores: args.cpuCores,
 			memoryMb: args.memoryMb,

@@ -17,7 +17,7 @@ export default defineSchema({
 	}),
 	nodes: defineTable({
 		userId: v.id("users"),
-		token: v.string(),
+		tokenHash: v.string(),
 		name: v.string(),
 		cpuCores: v.number(),
 		memoryMb: v.number(),

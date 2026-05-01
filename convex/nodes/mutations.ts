@@ -4,7 +4,7 @@ import { v } from "convex/values";
 export const insertNode = internalMutation({
 	args: {
 		userId: v.id("users"),
-		token: v.string(),
+		tokenHash: v.string(),
 		name: v.string(),
 		cpuCores: v.number(),
 		memoryMb: v.number(),
