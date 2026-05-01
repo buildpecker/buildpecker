@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import NodeViewTable from "@/components/node-view";
 import { NodeSelector } from "@/components/node-selector";
+import { ProjectSelector } from "@/components/project-selector";
+import ProjectViewTable from "@/components/project-view";
 
 export default function Home() {
 	return (
@@ -62,6 +64,13 @@ function Content() {
 			<div className="w-3xl">
 				<NodeSelector />
 			</div>
+			<div className="w-5xl">
+				<ProjectViewTable />
+			</div>
+			<div className="w-3xl">
+				<ProjectSelector />
+			</div>
+			<Button className="w-fit">Create Project</Button>
 			<Button className="w-fit">Deploy!!!</Button>
 		</>
 	);

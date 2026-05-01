@@ -10,20 +10,22 @@ import {
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
-export const NodeSelector: React.FC = () => {
+export const ProjectSelector: React.FC = () => {
 	const user = useQuery(api.users.mutations.current);
-	const nodes = useQuery(api.nodes.queries.getAllNodesForUser, user ? { userId: user._id } : "skip");
-	if (!nodes) return <div />;
+	const projects = useQuery(api.projects.queries.getAllProjectsForUser, user ? {
+		userId: user._id
+	} : "skip");
+	if (!projects) return <div />;
 	return (
 		<Select>
 			<SelectTrigger className="w-[180px]">
-				<SelectValue placeholder="Select a Node to Deploy" />
+				<SelectValue placeholder="Select a Project to Deploy" />
 			</SelectTrigger>
 			<SelectContent>
 				<SelectGroup>
 					{
-						nodes.map((n, idx) => {
-							return <SelectItem key={`select-node-${idx}`} value={n.name}>{n.name}</SelectItem>
+						projects.map((p, idx) => {
+							return <SelectItem key={`select-project-${idx}`} value={p.name}>{p.name}</SelectItem>
 						})
 					}
 				</SelectGroup>

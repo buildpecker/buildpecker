@@ -14,7 +14,7 @@ export default defineSchema({
 		framework: v.string(),
 		defaultBranch: v.string(),
 		repoUrl: v.string()
-	}),
+	}).index("by_ownerId", ["ownerId"]),
 	nodes: defineTable({
 		userId: v.id("users"),
 		tokenHash: v.string(),
@@ -23,7 +23,7 @@ export default defineSchema({
 		memoryMb: v.number(),
 		diskMb: v.number(),
 		hostname: v.string(),
-	}),
+	}).index("by_userId", ["userId"]),
 	deployments: defineTable({
 		name: v.string(),
 		nodeId: v.id("nodes"),
@@ -31,10 +31,11 @@ export default defineSchema({
 		imageUri: v.string(),
 		branch: v.string(),
 		sha: v.string(),
-	}),
+	}).index("by_nodeId", ["nodeId"])
+		.index("by_projectId", ["projectId"]),
 	environments: defineTable({
 		name: v.string(),
 		deploymentId: v.id("deployments"),
 		variables: v.record(v.string(), v.string()),
-	})
+	}).index("by_deploymentId", ["deploymentId"])
 });

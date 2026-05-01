@@ -8,11 +8,14 @@
  * @module
  */
 
+import type * as deployments_mutations from "../deployments/mutations.js";
 import type * as http from "../http.js";
 import type * as lib_redis from "../lib/redis.js";
 import type * as nodes_actions from "../nodes/actions.js";
 import type * as nodes_mutations from "../nodes/mutations.js";
 import type * as nodes_queries from "../nodes/queries.js";
+import type * as projects_mutations from "../projects/mutations.js";
+import type * as projects_queries from "../projects/queries.js";
 import type * as users_mutations from "../users/mutations.js";
 import type * as users_queries from "../users/queries.js";
 
@@ -23,11 +26,14 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "deployments/mutations": typeof deployments_mutations;
   http: typeof http;
   "lib/redis": typeof lib_redis;
   "nodes/actions": typeof nodes_actions;
   "nodes/mutations": typeof nodes_mutations;
   "nodes/queries": typeof nodes_queries;
+  "projects/mutations": typeof projects_mutations;
+  "projects/queries": typeof projects_queries;
   "users/mutations": typeof users_mutations;
   "users/queries": typeof users_queries;
 }>;
