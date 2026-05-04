@@ -1,9 +1,9 @@
 "use client";
 
-import { Authenticated, Unauthenticated, useAction } from "convex/react";
+import { Authenticated, Unauthenticated, useAction, useMutation, useQuery } from "convex/react";
 import { SignInButton, UserButton } from "@clerk/nextjs";
 import React, { useState } from "react";
-import { api } from "../../convex/_generated/api";
+import { api, internal } from "../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import NodeViewTable from "@/components/node-view";
@@ -27,9 +27,15 @@ export default function Home() {
 
 function Content() {
 	const [token, setToken] = useState("Add Node");
+	const [repoUrl, setRepoUrl] = useState("");
 	const [isCopied, setIsCopied] = useState(false);
 
-	const tokenAction = useAction(api.nodes.actions.createRegistrationToken);
+	const [node, setNode] = useState("");
+	const [project, setProject] = useState("");
+
+	const tokenAction = useAction(api.nodes.nodejs.actions.createRegistrationToken);
+	const createProjectMutation = useMutation(api.projects.mutations.createProject);
+	const currentUser = useQuery(api.users.queries.current);
 
 	const generateToken = async () => {
 		const regToken = await tokenAction();
@@ -51,6 +57,8 @@ function Content() {
 					className="peer invalid:border-red-500 valid:border-green-500"
 					type="url"
 					required
+					value={repoUrl}
+					onChange={(e) => setRepoUrl(e.target.value)}
 					placeholder="Enter your Github repo URL..."
 					pattern="https:\/\/github\.com\/[A-Za-z0-9_.\-]+\/[A-Za-z0-9_.\-]+\/?"
 				/>
@@ -62,15 +70,23 @@ function Content() {
 				</p>
 			</div>
 			<div className="w-3xl">
-				<NodeSelector />
+				<NodeSelector setNode={setNode} />
 			</div>
 			<div className="w-5xl">
 				<ProjectViewTable />
 			</div>
 			<div className="w-3xl">
-				<ProjectSelector />
+				<ProjectSelector setProject={setProject} />
 			</div>
-			<Button className="w-fit">Create Project</Button>
+			<Button onClick={() => {
+				if (repoUrl) createProjectMutation({
+					name: repoUrl.split("/").reverse()[0],
+					ownerId: currentUser?._id!,
+					framework: "Next.js",
+					defaultBranch: "main",
+					repoUrl: repoUrl
+				});
+			}} className="w-fit">Create Project</Button>
 			<Button className="w-fit">Deploy!!!</Button>
 		</>
 	);

@@ -6,6 +6,7 @@ export const createDeployment = mutation({
 		name: v.string(),
 		nodeId: v.id("nodes"),
 		projectId: v.id("projects"),
+		status: v.union(v.literal("queued"), v.literal("processing"), v.literal("completed")),
 		branch: v.string(),
 		sha: v.string(),
 		imageUri: v.string()
@@ -15,6 +16,7 @@ export const createDeployment = mutation({
 			name: args.name,
 			nodeId: args.nodeId,
 			projectId: args.projectId,
+			status: args.status,
 			branch: args.branch,
 			sha: args.sha,
 			imageUri: args.imageUri

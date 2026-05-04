@@ -9,3 +9,12 @@ export const getAllNodesForUser = query({
 			.collect();
 	}
 });
+
+export const getNodeByNodeToken = query({
+	args: { tokenHash: v.string() },
+	handler: async (ctx, args) => {
+		return await ctx.db.query("nodes")
+			.withIndex("by_tokenHash", t => t.eq("tokenHash", args.tokenHash))
+			.unique();
+	}
+})

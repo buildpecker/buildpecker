@@ -10,8 +10,8 @@ import {
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
-export const NodeSelector: React.FC = () => {
-	const user = useQuery(api.users.mutations.current);
+export const NodeSelector: React.FC<{ setNode: React.Dispatch<React.SetStateAction<string>> }> = ({ setNode }) => {
+	const user = useQuery(api.users.queries.current);
 	const nodes = useQuery(api.nodes.queries.getAllNodesForUser, user ? { userId: user._id } : "skip");
 	if (!nodes) return <div />;
 	return (

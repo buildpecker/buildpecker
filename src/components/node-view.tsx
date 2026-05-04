@@ -5,7 +5,7 @@ import { api } from "../../convex/_generated/api";
 
 const NodeViewTable: React.FC = () => {
 
-	const user = useQuery(api.users.mutations.current);
+	const user = useQuery(api.users.queries.current);
 	const nodes = useQuery(api.nodes.queries.getAllNodesForUser, user ? { userId: user._id } : "skip");
 
 	if (!nodes) {

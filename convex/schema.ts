@@ -23,13 +23,15 @@ export default defineSchema({
 		memoryMb: v.number(),
 		diskMb: v.number(),
 		hostname: v.string(),
-	}).index("by_userId", ["userId"]),
+	}).index("by_userId", ["userId"])
+		.index("by_tokenHash", ["tokenHash"]),
 	deployments: defineTable({
 		name: v.string(),
 		nodeId: v.id("nodes"),
 		projectId: v.id("projects"),
 		imageUri: v.string(),
 		branch: v.string(),
+		status: v.union(v.literal("queued"), v.literal("processing"), v.literal("completed")),
 		sha: v.string(),
 	}).index("by_nodeId", ["nodeId"])
 		.index("by_projectId", ["projectId"]),

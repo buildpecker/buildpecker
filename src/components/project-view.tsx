@@ -5,7 +5,7 @@ import { api } from "../../convex/_generated/api";
 
 const ProjectViewTable: React.FC = () => {
 
-	const user = useQuery(api.users.mutations.current);
+	const user = useQuery(api.users.queries.current);
 	const projects = useQuery(api.projects.queries.getAllProjectsForUser, user ? { userId: user._id } : "skip");
 
 	if (!projects) {

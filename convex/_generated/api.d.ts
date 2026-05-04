@@ -13,6 +13,7 @@ import type * as http from "../http.js";
 import type * as lib_redis from "../lib/redis.js";
 import type * as nodes_actions from "../nodes/actions.js";
 import type * as nodes_mutations from "../nodes/mutations.js";
+import type * as nodes_nodejs_actions from "../nodes/nodejs/actions.js";
 import type * as nodes_queries from "../nodes/queries.js";
 import type * as projects_mutations from "../projects/mutations.js";
 import type * as projects_queries from "../projects/queries.js";
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   "lib/redis": typeof lib_redis;
   "nodes/actions": typeof nodes_actions;
   "nodes/mutations": typeof nodes_mutations;
+  "nodes/nodejs/actions": typeof nodes_nodejs_actions;
   "nodes/queries": typeof nodes_queries;
   "projects/mutations": typeof projects_mutations;
   "projects/queries": typeof projects_queries;

@@ -1,13 +1,6 @@
-import { internalMutation, query, QueryCtx } from "../_generated/server";
+import { internalMutation, QueryCtx } from "../_generated/server";
 import { UserJSON } from "@clerk/backend";
 import { v, Validator } from "convex/values";
-
-export const current = query({
-	args: {},
-	handler: async (ctx) => {
-		return await getCurrentUser(ctx);
-	},
-});
 
 export const upsertFromClerk = internalMutation({
 	args: { data: v.any() as Validator<UserJSON> }, // no runtime validation, trust Clerk

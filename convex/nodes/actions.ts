@@ -1,62 +1,27 @@
-"use node"
-
-import { v } from "convex/values";
-import { action } from "../_generated/server";
 import { api, internal } from "../_generated/api";
-import { Id } from "../_generated/dataModel";
-import redis from "../lib/redis";
-import { hash } from "node:crypto";
+import { httpAction } from "../_generated/server";
 
-export const createRegistrationToken = action({
-	args: {},
-	handler: async (ctx): Promise<string> => {
-		const user = await ctx.runQuery(api.users.mutations.current, {});
-		if (!user) throw new Error("User not found");
+export const deleteNode = httpAction(async (ctx, req) => {
+	const authHeader = req.headers.get("Authorization")
+	const nodeToken = authHeader?.split(" ")[1] ?? "";
 
-		const bytes = crypto.getRandomValues(new Uint8Array(32));
-		const token = Array.from(bytes)
-			.map(b => b.toString(16).padStart(2, "0"))
-			.join("");
-
-		await redis.set(token, user._id, "EX", 10 * 60, "NX");
-
-		return token;
+	if (!nodeToken) {
+		throw new Error("Unauthorized - Cannot delete node");
 	}
-});
 
-export const registerNode = action({
-	args: {
-		token: v.string(),
-		cpuCores: v.number(),
-		memoryMb: v.number(),
-		diskMb: v.number(),
-		hostname: v.string(),
-	},
-	handler: async (ctx, args): Promise<{ nodeId: Id<"nodes">; nodeToken: string }> => {
-		const userId = await redis.get(args.token) as Id<"users"> | null;
-		if (!userId) throw new Error("Invalid or expired token");
+	const tokenHash = await ctx.runAction(internal.nodes.nodejs.actions.hashToken, { token: nodeToken });
 
-		const bytes = crypto.getRandomValues(new Uint8Array(32));
-		const nodeToken = Array.from(bytes)
-			.map(b => b.toString(16).padStart(2, "0"))
-			.join("");
+	const node = await ctx.runQuery(api.nodes.queries.getNodeByNodeToken, { tokenHash: tokenHash });
 
-		const tokenHash = hash('sha256', nodeToken)
+	if (!node) {
+		throw new Error("Invalid node");
+	}
 
-		const idx = Math.floor(Math.random() * 5000);
-
-		const nodeId: Id<"nodes"> = await ctx.runMutation(internal.nodes.mutations.insertNode, {
-			userId,
-			tokenHash: tokenHash,
-			name: `Node ${idx}`,
-			cpuCores: args.cpuCores,
-			memoryMb: args.memoryMb,
-			diskMb: args.diskMb,
-			hostname: args.hostname,
+	try {
+		await ctx.runMutation(internal.nodes.mutations.deleteNode, {
+			nodeId: node._id
 		});
+	} catch (err) { throw err; }
 
-		await redis.del(args.token);
-
-		return { nodeId, nodeToken };
-	}
+	return new Response(null, { status: 200 });
 });

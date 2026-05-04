@@ -1,4 +1,4 @@
-import { internalMutation } from "../_generated/server";
+import { internalMutation, mutation } from "../_generated/server";
 import { v } from "convex/values";
 
 export const insertNode = internalMutation({
@@ -13,5 +13,14 @@ export const insertNode = internalMutation({
 	},
 	handler: async (ctx, args) => {
 		return await ctx.db.insert("nodes", args);
+	}
+});
+
+export const deleteNode = internalMutation({
+	args: {
+		nodeId: v.id("nodes"),
+	},
+	handler: async (ctx, args) => {
+		return await ctx.db.delete("nodes", args.nodeId);
 	}
 });

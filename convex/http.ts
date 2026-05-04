@@ -4,6 +4,8 @@ import { internal } from "./_generated/api";
 import type { WebhookEvent } from "@clerk/backend";
 import { Webhook } from "svix";
 
+import { deleteNode } from "../convex/nodes/actions"
+
 const http = httpRouter();
 
 http.route({
@@ -34,6 +36,12 @@ http.route({
 		return new Response(null, { status: 200 });
 	}),
 });
+
+http.route({
+	path: "/nodes/delete-node",
+	method: "POST",
+	handler: deleteNode
+})
 
 async function validateRequest(req: Request): Promise<WebhookEvent | null> {
 	const payloadString = await req.text();
