@@ -5,6 +5,7 @@ import type { WebhookEvent } from "@clerk/backend";
 import { Webhook } from "svix";
 
 import { deleteNode } from "../convex/nodes/actions"
+import { getQueuedDeploymentsAction, setDeploymentStatusAction } from "./deployments/actions";
 
 const http = httpRouter();
 
@@ -41,6 +42,18 @@ http.route({
 	path: "/nodes/delete-node",
 	method: "POST",
 	handler: deleteNode
+})
+
+http.route({
+	path: "/deployments/queued",
+	method: "POST",
+	handler: getQueuedDeploymentsAction
+})
+
+http.route({
+	path: "/deployments/status",
+	method: "POST",
+	handler: setDeploymentStatusAction
 })
 
 async function validateRequest(req: Request): Promise<WebhookEvent | null> {

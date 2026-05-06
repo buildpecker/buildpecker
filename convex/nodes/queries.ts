@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { query } from "../_generated/server";
+import { internalQuery, query } from "../_generated/server";
 
 export const getAllNodesForUser = query({
 	args: { userId: v.id("users") },
@@ -10,7 +10,7 @@ export const getAllNodesForUser = query({
 	}
 });
 
-export const getNodeByNodeToken = query({
+export const getNodeByNodeToken = internalQuery({
 	args: { tokenHash: v.string() },
 	handler: async (ctx, args) => {
 		return await ctx.db.query("nodes")

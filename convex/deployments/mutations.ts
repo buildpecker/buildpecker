@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation } from "../_generated/server";
+import { internalMutation, mutation } from "../_generated/server";
 
 export const createDeployment = mutation({
 	args: {
@@ -23,3 +23,19 @@ export const createDeployment = mutation({
 		})
 	}
 });
+
+export const setDeploymentStatus = internalMutation({
+	args: {
+		nodeId: v.id("nodes"),
+		id: v.id("deployments"),
+		status: v.union(v.literal("queued"), v.literal("processing"), v.literal("completed")),
+	},
+	handler: async (ctx, args) => {
+		const row = await ctx.db.get("deployments", args.id);
+
+		if (!row || row.nodeId !== args.nodeId)
+			throw new Error(`No deployment with node id ${args.nodeId} and id ${args.id}`);
+
+		ctx.db.patch("deployments", row._id, { "status": args.status })
+	}
+})

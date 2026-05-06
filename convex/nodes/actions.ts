@@ -1,4 +1,4 @@
-import { api, internal } from "../_generated/api";
+import { internal } from "../_generated/api";
 import { httpAction } from "../_generated/server";
 
 export const deleteNode = httpAction(async (ctx, req) => {
@@ -6,12 +6,12 @@ export const deleteNode = httpAction(async (ctx, req) => {
 	const nodeToken = authHeader?.split(" ")[1] ?? "";
 
 	if (!nodeToken) {
-		throw new Error("Unauthorized - Cannot delete node");
+		throw new Error("Unauthorized - No node token");
 	}
 
 	const tokenHash = await ctx.runAction(internal.nodes.nodejs.actions.hashToken, { token: nodeToken });
 
-	const node = await ctx.runQuery(api.nodes.queries.getNodeByNodeToken, { tokenHash: tokenHash });
+	const node = await ctx.runQuery(internal.nodes.queries.getNodeByNodeToken, { tokenHash: tokenHash });
 
 	if (!node) {
 		throw new Error("Invalid node");
