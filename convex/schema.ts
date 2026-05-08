@@ -13,7 +13,9 @@ export default defineSchema({
 		ownerId: v.id("users"),
 		framework: v.string(),
 		defaultBranch: v.string(),
-		repoUrl: v.string()
+		repoUrl: v.string(),
+		buildCommand: v.string(),
+		startCommand: v.string(),
 	}).index("by_ownerId", ["ownerId"]),
 	nodes: defineTable({
 		userId: v.id("users"),

@@ -6,11 +6,18 @@ export const getQueuedDeployments = internalQuery({
 		id: v.id("nodes")
 	},
 	handler: async (ctx, args) => {
-		const rows = await ctx.db.query("deployments")
+		let rows = await ctx.db.query("deployments")
 			.withIndex("by_nodeId", n => n.eq("nodeId", args.id))
 			.collect();
 
-		const queued = rows.filter(q => q.status === "queued");
+		//project metadata
+		const projects = await Promise.all(rows.map(async (dep) => await ctx.db.get("projects", dep.projectId)));
+
+		const rowsWithProjects = rows.map((d, idx) => {
+			return { ...d, project: projects[idx] }
+		})
+
+		const queued = rowsWithProjects.filter(q => q.status === "queued");
 
 		return queued;
 	}

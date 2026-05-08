@@ -16,6 +16,8 @@ export const createProject = mutation({
 			framework: args.framework,
 			defaultBranch: "main",
 			repoUrl: args.repoUrl,
+			buildCommand: "",
+			startCommand: ""
 		});
 	}
 });

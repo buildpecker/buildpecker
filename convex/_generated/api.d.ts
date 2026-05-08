@@ -11,6 +11,7 @@
 import type * as deployments_actions from "../deployments/actions.js";
 import type * as deployments_mutations from "../deployments/mutations.js";
 import type * as deployments_queries from "../deployments/queries.js";
+import type * as github_queries from "../github/queries.js";
 import type * as http from "../http.js";
 import type * as lib_redis from "../lib/redis.js";
 import type * as nodes_actions from "../nodes/actions.js";
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   "deployments/actions": typeof deployments_actions;
   "deployments/mutations": typeof deployments_mutations;
   "deployments/queries": typeof deployments_queries;
+  "github/queries": typeof github_queries;
   http: typeof http;
   "lib/redis": typeof lib_redis;
   "nodes/actions": typeof nodes_actions;

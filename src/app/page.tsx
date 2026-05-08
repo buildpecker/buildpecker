@@ -26,10 +26,13 @@ export default function Home() {
 	);
 }
 
+const GITHUB_REPO_REGEX = /^(?:git@github\.com:|https:\/\/github\.com\/)[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?\/[A-Za-z0-9_-]{1,100}(?:\.git)?\/?$/;
+
 function Content() {
 	const [token, setToken] = useState("Add Node");
 	const [repoUrl, setRepoUrl] = useState("");
 	const [isCopied, setIsCopied] = useState(false);
+	const isRepoUrlValid = GITHUB_REPO_REGEX.test(repoUrl);
 
 	const [node, setNode] = useState<Id<"nodes">>();
 	const [project, setProject] = useState<Id<"projects">>();
@@ -64,20 +67,18 @@ function Content() {
 			}}>{!isCopied ? "Copy Token" : "Copied!"}</Button>
 			<div className="space-y-2">
 				<Input
-					className="peer invalid:border-red-500 valid:border-green-500"
-					type="url"
-					required
+					className={repoUrl === "" ? "" : isRepoUrlValid ? "border-green-500" : "border-red-500"}
+					type="text"
 					value={repoUrl}
 					onChange={(e) => setRepoUrl(e.target.value)}
 					placeholder="Enter your Github repo URL..."
-					pattern="https:\/\/github\.com\/[A-Za-z0-9_.\-]+\/[A-Za-z0-9_.\-]+\/?"
 				/>
-				<p className="hidden text-xs text-red-500 peer-invalid:block">
-					Invalid GitHub repo URL
-				</p>
-				<p className="hidden text-xs text-green-500 peer-valid:block">
-					Looks good
-				</p>
+				{repoUrl !== "" && !isRepoUrlValid && (
+					<p className="text-xs text-red-500">Invalid GitHub repo URL</p>
+				)}
+				{repoUrl !== "" && isRepoUrlValid && (
+					<p className="text-xs text-green-500">Looks good</p>
+				)}
 			</div>
 			<div className="w-3xl">
 				<NodeSelector value={node} onChange={setNode} />
@@ -89,7 +90,7 @@ function Content() {
 				<ProjectSelector value={project} onChange={setProject} />
 			</div>
 			<Button onClick={() => {
-				if (repoUrl) createProjectMutation({
+				if (isRepoUrlValid) createProjectMutation({
 					name: repoUrl.split("/").reverse()[0],
 					ownerId: currentUser?._id!,
 					framework: "Next.js",
