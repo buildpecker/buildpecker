@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation } from "../_generated/server";
+import { internalMutation, mutation } from "../_generated/server";
 
 export const createProject = mutation({
 	args: {
@@ -21,3 +21,13 @@ export const createProject = mutation({
 		});
 	}
 });
+
+export const updateProjectFramework = internalMutation({
+	args: {
+		id: v.id("projects"),
+		framework: v.string(),
+	},
+	handler: async (ctx, args) => {
+		return await ctx.db.patch("projects", args.id, { framework: args.framework })
+	}
+})

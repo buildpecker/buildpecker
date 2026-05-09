@@ -93,7 +93,7 @@ function Content() {
 				if (isRepoUrlValid) createProjectMutation({
 					name: repoUrl.split("/").reverse()[0],
 					ownerId: currentUser?._id!,
-					framework: "Next.js",
+					framework: "",
 					defaultBranch: "main",
 					repoUrl: repoUrl
 				});

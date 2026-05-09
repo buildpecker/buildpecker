@@ -6,6 +6,7 @@ import { Webhook } from "svix";
 
 import { deleteNode } from "../convex/nodes/actions"
 import { getQueuedDeploymentsAction, setDeploymentStatusAction } from "./deployments/actions";
+import { setProjectFrameworkAction } from "./projects/actions";
 
 const http = httpRouter();
 
@@ -52,8 +53,14 @@ http.route({
 
 http.route({
 	path: "/deployments/status",
-	method: "POST",
+	method: "PATCH",
 	handler: setDeploymentStatusAction
+})
+
+http.route({
+	path: "/projects/framework",
+	method: "PATCH",
+	handler: setProjectFrameworkAction
 })
 
 async function validateRequest(req: Request): Promise<WebhookEvent | null> {
