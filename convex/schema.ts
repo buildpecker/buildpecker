@@ -37,9 +37,20 @@ export default defineSchema({
 		sha: v.string(),
 	}).index("by_nodeId", ["nodeId"])
 		.index("by_projectId", ["projectId"]),
+	secrets: defineTable({
+		environmentId: v.id("environments"),
+		key: v.string(),
+		ciphertext: v.string(),
+		wrappedKey: v.string(),
+		wrapIv: v.string(),
+		dataIv: v.string(),
+		dataTag: v.string(),
+		wrapTag: v.string(),
+	})
+		.index("by_ciphertext", ["ciphertext"])
+		.index("by_envId", ["environmentId"])
+		.index("by_envId_key", ["environmentId", "key"]),
 	environments: defineTable({
-		name: v.string(),
-		deploymentId: v.id("deployments"),
-		variables: v.record(v.string(), v.string()),
-	}).index("by_deploymentId", ["deploymentId"])
+		projectId: v.id("projects"),
+	}).index("by_projectId", ["projectId"])
 });

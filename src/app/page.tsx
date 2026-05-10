@@ -11,6 +11,7 @@ import { NodeSelector } from "@/components/node-selector";
 import { ProjectSelector } from "@/components/project-selector";
 import ProjectViewTable from "@/components/project-view";
 import { Id } from "../../convex/_generated/dataModel";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function Home() {
 	return (
@@ -36,9 +37,11 @@ function Content() {
 
 	const [node, setNode] = useState<Id<"nodes">>();
 	const [project, setProject] = useState<Id<"projects">>();
+	const [env, setEnv] = useState<string>();
 
 	const tokenAction = useAction(api.nodes.nodejs.actions.createRegistrationToken);
 	const createProjectMutation = useMutation(api.projects.mutations.createProject);
+	const createEnvMutation = useMutation(api.environments.mutations.createProjectEnvironment);
 	const currentUser = useQuery(api.users.queries.current);
 
 	const generateToken = async () => {
@@ -65,6 +68,10 @@ function Content() {
 				navigator.clipboard.writeText(token);
 				setIsCopied(true);
 			}}>{!isCopied ? "Copy Token" : "Copied!"}</Button>
+			<div className="w-5xl">
+				<ProjectViewTable />
+			</div>
+			<p className="h-8" />
 			<div className="space-y-2">
 				<Input
 					className={repoUrl === "" ? "" : isRepoUrlValid ? "border-green-500" : "border-red-500"}
@@ -80,24 +87,37 @@ function Content() {
 					<p className="text-xs text-green-500">Looks good</p>
 				)}
 			</div>
-			<div className="w-3xl">
+			<div>
+				<Textarea
+					placeholder="Enter your .env variables, KEY=VALUE format"
+					value={env}
+					onChange={(e) => setEnv(e.target.value)}
+				/>
+			</div>
+			<Button onClick={async () => {
+				if (isRepoUrlValid) {
+					const projectId = await createProjectMutation({
+						name: repoUrl.split("/").reverse()[0],
+						ownerId: currentUser?._id!,
+						framework: "",
+						defaultBranch: "main",
+						repoUrl: repoUrl
+					});
+
+					if (env) {
+						createEnvMutation({
+							id: projectId,
+							envString: env
+						})
+					}
+				}
+			}} className="w-fit">Create Project</Button>
+			<div className="w-5xl">
 				<NodeSelector value={node} onChange={setNode} />
 			</div>
 			<div className="w-5xl">
-				<ProjectViewTable />
-			</div>
-			<div className="w-3xl">
 				<ProjectSelector value={project} onChange={setProject} />
 			</div>
-			<Button onClick={() => {
-				if (isRepoUrlValid) createProjectMutation({
-					name: repoUrl.split("/").reverse()[0],
-					ownerId: currentUser?._id!,
-					framework: "",
-					defaultBranch: "main",
-					repoUrl: repoUrl
-				});
-			}} className="w-fit">Create Project</Button>
 			<p>{project}<br />{node}</p>
 			<Button onClick={() => deployProject()} className="w-fit">Deploy!!!</Button>
 		</>

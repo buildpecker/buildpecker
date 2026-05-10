@@ -10,7 +10,7 @@ export const createProject = mutation({
 		framework: v.string()
 	},
 	handler: async (ctx, args) => {
-		return await ctx.db.insert("projects", {
+		const id = await ctx.db.insert("projects", {
 			name: args.name,
 			ownerId: args.ownerId,
 			framework: args.framework,
@@ -19,6 +19,8 @@ export const createProject = mutation({
 			buildCommand: "",
 			startCommand: ""
 		});
+
+		return id;
 	}
 });
 

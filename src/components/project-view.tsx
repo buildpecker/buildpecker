@@ -14,7 +14,6 @@ const ProjectViewTable: React.FC = () => {
 
 	return (
 		<Table>
-			<TableCaption>User's project</TableCaption>
 			<TableHeader>
 				<TableRow>
 					<TableHead>Name</TableHead>

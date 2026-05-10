@@ -14,7 +14,6 @@ const NodeViewTable: React.FC = () => {
 
 	return (
 		<Table>
-			<TableCaption>User's registered nodes</TableCaption>
 			<TableHeader>
 				<TableRow>
 					<TableHead>Name</TableHead>
