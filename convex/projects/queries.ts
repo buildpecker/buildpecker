@@ -9,3 +9,8 @@ export const getAllProjectsForUser = query({
 			.collect();
 	}
 });
+
+export const getProjectById = query({
+	args: { id: v.id("projects") },
+	handler: async (ctx, args) => await ctx.db.get(args.id),
+});

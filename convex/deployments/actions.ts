@@ -21,7 +21,7 @@ export const getQueuedDeploymentsAction = httpAction(async (ctx, req) => {
 	const body = await req.json();
 	const { id } = body;
 
-	let deployments = await ctx.runQuery(internal.deployments.queries.getQueuedDeployments, { id: id });
+	const deployments = await ctx.runQuery(internal.deployments.queries.getQueuedDeployments, { id: id });
 
 	return new Response(JSON.stringify(deployments), { status: 200 });
 })

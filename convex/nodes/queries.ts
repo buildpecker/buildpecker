@@ -10,6 +10,11 @@ export const getAllNodesForUser = query({
 	}
 });
 
+export const getNodeById = query({
+	args: { id: v.id("nodes") },
+	handler: async (ctx, args) => await ctx.db.get(args.id),
+});
+
 export const getNodeByNodeToken = internalQuery({
 	args: { tokenHash: v.string() },
 	handler: async (ctx, args) => {
