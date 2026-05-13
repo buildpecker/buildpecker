@@ -4,7 +4,7 @@ import { internal } from "./_generated/api";
 import type { WebhookEvent } from "@clerk/backend";
 import { Webhook } from "svix";
 
-import { deleteNode } from "../convex/nodes/actions"
+import { deleteNode, setHeartbeatAction } from "../convex/nodes/actions"
 import { getQueuedDeploymentsAction, setDeploymentStatusAction } from "./deployments/actions";
 import { setProjectFrameworkAction } from "./projects/actions";
 import { getEnvironmentSecretsAction } from "./environments/actions";
@@ -68,6 +68,12 @@ http.route({
 	path: "/environments/secrets",
 	method: "POST",
 	handler: getEnvironmentSecretsAction
+})
+
+http.route({
+	path: "/nodes/heartbeat",
+	method: "POST",
+	handler: setHeartbeatAction
 })
 
 async function validateRequest(req: Request): Promise<WebhookEvent | null> {

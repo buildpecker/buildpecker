@@ -25,3 +25,27 @@ export const deleteNode = httpAction(async (ctx, req) => {
 
 	return new Response(null, { status: 200 });
 });
+
+export const setHeartbeatAction = httpAction(async (ctx, req) => {
+	const authHeader = req.headers.get("Authorization")
+	const nodeToken = authHeader?.split(" ")[1] ?? "";
+
+	if (!nodeToken) {
+		throw new Error("Unauthorized - No node token");
+	}
+
+	const tokenHash = await ctx.runAction(internal.nodes.nodejs.actions.hashToken, { token: nodeToken });
+
+	const node = await ctx.runQuery(internal.nodes.queries.getNodeByNodeToken, { tokenHash: tokenHash });
+
+	if (!node) {
+		throw new Error("Invalid node");
+	}
+
+	await ctx.runMutation(internal.nodes.mutations.setLastHearbeatTime, {
+		time: Date.now(),
+		nodeId: node._id
+	});
+
+	return new Response(null, { status: 200 });
+})

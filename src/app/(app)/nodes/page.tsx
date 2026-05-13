@@ -8,12 +8,14 @@ import { Topbar } from "@/components/app-shell/topbar";
 import { Panel, PanelBody, PanelFooter } from "@/components/blueprint/panel";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
-import { PlusIcon, ArrowRightIcon, CircleNotchIcon, HardDrivesIcon } from "@phosphor-icons/react";
-import { formatMb, shortId } from "@/lib/format";
+import { PlusIcon, ArrowRightIcon, CircleNotchIcon, HardDrivesIcon, PulseIcon } from "@phosphor-icons/react";
+import { formatMb, relativeTimeIntl, shortId } from "@/lib/format";
+import { useNow } from "@/hooks/use-now";
 
 export default function NodesListPage() {
 	const user = useQuery(api.users.queries.current);
 	const nodes = useQuery(api.nodes.queries.getAllNodesForUser, user ? { userId: user._id } : "skip");
+	const now = useNow(1000);
 
 	const loading = !user || !nodes;
 
@@ -95,6 +97,17 @@ export default function NodesListPage() {
 										</div>
 									</dl>
 
+									<div className="flex items-center justify-between text-[10px] tabular-nums text-muted-foreground">
+										<span className="inline-flex items-center gap-1.5">
+											<PulseIcon
+												className={`size-3 ${now - n.lastHeartbeat < 60_000 ? "text-[var(--status-completed)]" : "text-muted-foreground"}`}
+												weight={now - n.lastHeartbeat < 60_000 ? "fill" : "regular"}
+											/>
+											<span className="bp-caption text-[10px] normal-case tracking-[0.04em]">
+												last heartbeat {relativeTimeIntl(n.lastHeartbeat, now)}
+											</span>
+										</span>
+									</div>
 									<div className="flex items-end justify-between text-[10px] tabular-nums text-muted-foreground">
 										<span>id · {shortId(n._id)}</span>
 										<span className="inline-flex items-center gap-1 group-hover:text-primary">

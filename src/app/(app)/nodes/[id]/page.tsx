@@ -13,14 +13,16 @@ import { StatusBadge } from "@/components/status-badge";
 import { CopyToken } from "@/components/copy-token";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
-import { HardDrivesIcon, ArrowRightIcon, CircleNotchIcon } from "@phosphor-icons/react";
-import { formatMb, relativeTime, shortId } from "@/lib/format";
+import { HardDrivesIcon, ArrowRightIcon, CircleNotchIcon, PulseIcon } from "@phosphor-icons/react";
+import { formatMb, relativeTime, relativeTimeIntl, shortId } from "@/lib/format";
+import { useNow } from "@/hooks/use-now";
 
 export default function NodeDetailPage() {
 	const params = useParams<{ id: string }>();
 	const nodeId = params.id as Id<"nodes">;
 	const node = useQuery(api.nodes.queries.getNodeById, { id: nodeId });
 	const deployments = useQuery(api.deployments.queries.getDeploymentsByNode, { nodeId });
+	const now = useNow(1000);
 
 	if (node === undefined) {
 		return (
@@ -67,6 +69,18 @@ export default function NodeDetailPage() {
 							<div className="flex flex-col gap-1">
 								<h1 className="text-2xl font-medium tracking-[-0.01em] text-foreground">{node.name}</h1>
 								<span className="bp-caption text-[11px]">{node.hostname}</span>
+							</div>
+						</div>
+						<div className="flex flex-col items-end gap-1">
+							<span className="bp-label">heartbeat</span>
+							<div className="inline-flex items-center gap-1.5">
+								<PulseIcon
+									className={`size-3.5 ${now - node.lastHeartbeat < 60_000 ? "text-[var(--status-completed)]" : "text-muted-foreground"}`}
+									weight={now - node.lastHeartbeat < 60_000 ? "fill" : "regular"}
+								/>
+								<span className="text-xs tabular-nums text-foreground">
+									last timestamp {relativeTimeIntl(node.lastHeartbeat, now)}
+								</span>
 							</div>
 						</div>
 					</div>

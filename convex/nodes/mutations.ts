@@ -1,6 +1,13 @@
 import { internalMutation, mutation } from "../_generated/server";
 import { v } from "convex/values";
 
+export const setLastHearbeatTime = internalMutation({
+	args: { time: v.number(), nodeId: v.id("nodes") },
+	handler: async (ctx, args) => {
+		return await ctx.db.patch("nodes", args.nodeId, { lastHeartbeat: args.time })
+	}
+})
+
 export const insertNode = internalMutation({
 	args: {
 		userId: v.id("users"),
@@ -12,7 +19,7 @@ export const insertNode = internalMutation({
 		hostname: v.string(),
 	},
 	handler: async (ctx, args) => {
-		return await ctx.db.insert("nodes", args);
+		return await ctx.db.insert("nodes", { ...args, lastHeartbeat: Date.now() });
 	}
 });
 

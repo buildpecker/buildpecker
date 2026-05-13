@@ -25,6 +25,7 @@ export default defineSchema({
 		memoryMb: v.number(),
 		diskMb: v.number(),
 		hostname: v.string(),
+		lastHeartbeat: v.number(),
 	}).index("by_userId", ["userId"])
 		.index("by_tokenHash", ["tokenHash"]),
 	deployments: defineTable({

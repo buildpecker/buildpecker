@@ -28,6 +28,46 @@ export function relativeTime(input: number | string | Date): string {
 	return date.toISOString().slice(0, 10);
 }
 
+const rtfCache = new Map<string, Intl.RelativeTimeFormat>();
+function getRtf(locale?: string): Intl.RelativeTimeFormat {
+	const key = locale ?? "default";
+	let rtf = rtfCache.get(key);
+	if (!rtf) {
+		rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+		rtfCache.set(key, rtf);
+	}
+	return rtf;
+}
+
+export function relativeTimeIntl(
+	input: number | string | Date,
+	now: number = Date.now(),
+	locale?: string,
+): string {
+	const ts =
+		typeof input === "number"
+			? input
+			: typeof input === "string"
+				? new Date(input).getTime()
+				: input.getTime();
+	const diffSec = Math.round((ts - now) / 1000);
+	const rtf = getRtf(locale);
+	const abs = Math.abs(diffSec);
+	if (abs < 60) return rtf.format(diffSec, "second");
+	const min = Math.round(diffSec / 60);
+	if (Math.abs(min) < 60) return rtf.format(min, "minute");
+	const hr = Math.round(min / 60);
+	if (Math.abs(hr) < 24) return rtf.format(hr, "hour");
+	const day = Math.round(hr / 24);
+	if (Math.abs(day) < 7) return rtf.format(day, "day");
+	const wk = Math.round(day / 7);
+	if (Math.abs(wk) < 5) return rtf.format(wk, "week");
+	const mo = Math.round(day / 30);
+	if (Math.abs(mo) < 12) return rtf.format(mo, "month");
+	const yr = Math.round(day / 365);
+	return rtf.format(yr, "year");
+}
+
 export function isoDate(date: Date = new Date()): string {
 	return date.toISOString().slice(0, 10);
 }
