@@ -18,6 +18,7 @@ import type * as environments_queries from "../environments/queries.js";
 import type * as http from "../http.js";
 import type * as lib_redis from "../lib/redis.js";
 import type * as nodes_actions from "../nodes/actions.js";
+import type * as nodes_metricsActions from "../nodes/metricsActions.js";
 import type * as nodes_mutations from "../nodes/mutations.js";
 import type * as nodes_nodejs_actions from "../nodes/nodejs/actions.js";
 import type * as nodes_queries from "../nodes/queries.js";
@@ -46,6 +47,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   "lib/redis": typeof lib_redis;
   "nodes/actions": typeof nodes_actions;
+  "nodes/metricsActions": typeof nodes_metricsActions;
   "nodes/mutations": typeof nodes_mutations;
   "nodes/nodejs/actions": typeof nodes_nodejs_actions;
   "nodes/queries": typeof nodes_queries;

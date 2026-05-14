@@ -11,8 +11,9 @@ import { Panel, PanelBody, PanelFooter } from "@/components/blueprint/panel";
 import { StatusBadge } from "@/components/status-badge";
 import { CopyToken } from "@/components/copy-token";
 import { EmptyState } from "@/components/empty-state";
-import { CircleNotchIcon, GithubLogoIcon, HardDrivesIcon, FolderIcon, FileTextIcon } from "@phosphor-icons/react";
+import { CircleNotchIcon, GithubLogoIcon, HardDrivesIcon, FolderIcon } from "@phosphor-icons/react";
 import { relativeTime, shortId } from "@/lib/format";
+import { DeploymentLogStream } from "@/components/deployment-log-stream";
 
 export default function DeploymentDetailPage() {
 	const params = useParams<{ id: string }>();
@@ -115,19 +116,10 @@ export default function DeploymentDetailPage() {
 				</div>
 
 				<Panel tag="C" label="Build output" caption="logs · stream">
-					<PanelBody className="flex min-h-[200px] flex-col items-center justify-center gap-3 text-center">
-						<FileTextIcon className="size-6 text-muted-foreground/60" />
-						<div className="flex flex-col gap-1">
-							<span className="text-xs font-medium text-foreground">Streaming logs unavailable</span>
-							<span className="max-w-md text-[11px] leading-relaxed text-muted-foreground">
-								The current backend stores no log table — the receiving node writes output to its own filesystem.
-								Add a logs table or stream endpoint to surface build output here.
-							</span>
-						</div>
-					</PanelBody>
+					<DeploymentLogStream deploymentId={dep._id} />
 					<PanelFooter>
 						<span>section C · output</span>
-						<span className="tabular-nums">live · n/a</span>
+						<span>loki · {dep._id.slice(0, 8)}</span>
 					</PanelFooter>
 				</Panel>
 

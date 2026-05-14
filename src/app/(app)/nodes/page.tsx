@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PlusIcon, ArrowRightIcon, CircleNotchIcon, HardDrivesIcon, PulseIcon } from "@phosphor-icons/react";
 import { formatMb, relativeTimeIntl, shortId } from "@/lib/format";
 import { useNow } from "@/hooks/use-now";
+import { NodeMetrics } from "@/components/node-metrics";
 
 export default function NodesListPage() {
 	const user = useQuery(api.users.queries.current);
@@ -62,57 +63,65 @@ export default function NodesListPage() {
 							/>
 						</PanelBody>
 					) : (
-						<div className="grid grid-cols-1 gap-px bg-border md:grid-cols-2 xl:grid-cols-3">
+						<div className="flex flex-col gap-px bg-border">
 							{nodes.map((n, i) => (
 								<Link
 									key={n._id}
 									href={`/nodes/${n._id}`}
-									className="bp-row group flex flex-col gap-4 bg-card p-5 transition-colors hover:bg-muted/40"
+									className="bp-row group grid grid-cols-1 gap-px bg-border transition-colors md:grid-cols-[minmax(260px,340px)_1fr]"
 								>
-									<div className="flex items-start justify-between gap-3">
-										<div className="flex items-center gap-2.5">
-											<div className="flex size-8 items-center justify-center border border-border bg-background">
-												<HardDrivesIcon className="size-4 text-primary" />
+									{/* left: identity + capacity */}
+									<div className="flex flex-col gap-4 bg-card p-5 group-hover:bg-muted/40">
+										<div className="flex items-start justify-between gap-3">
+											<div className="flex items-center gap-2.5">
+												<div className="flex size-8 items-center justify-center border border-border bg-background">
+													<HardDrivesIcon className="size-4 text-primary" />
+												</div>
+												<div className="flex flex-col">
+													<span className="text-xs font-medium tracking-[0.04em] text-foreground">{n.name}</span>
+													<span className="bp-caption text-[10px]">{n.hostname}</span>
+												</div>
 											</div>
-											<div className="flex flex-col">
-												<span className="text-xs font-medium tracking-[0.04em] text-foreground">{n.name}</span>
-												<span className="bp-caption text-[10px]">{n.hostname}</span>
+											<span className="bp-caption text-[9px] tabular-nums">{String(i + 1).padStart(3, "0")}</span>
+										</div>
+
+										<dl className="grid grid-cols-3 gap-2 border-y border-border/60 py-3 text-[10px] tracking-[0.04em] uppercase">
+											<div className="flex flex-col gap-0.5">
+												<dt className="bp-caption">cpu</dt>
+												<dd className="text-sm tabular-nums text-foreground">{n.cpuCores}</dd>
 											</div>
-										</div>
-										<span className="bp-caption text-[9px] tabular-nums">{String(i + 1).padStart(3, "0")}</span>
-									</div>
+											<div className="flex flex-col gap-0.5">
+												<dt className="bp-caption">memory</dt>
+												<dd className="text-sm tabular-nums text-foreground">{formatMb(n.memoryMb)}</dd>
+											</div>
+											<div className="flex flex-col gap-0.5">
+												<dt className="bp-caption">disk</dt>
+												<dd className="text-sm tabular-nums text-foreground">{formatMb(n.diskMb)}</dd>
+											</div>
+										</dl>
 
-									<dl className="grid grid-cols-3 gap-2 border-y border-border/60 py-3 text-[10px] tracking-[0.04em] uppercase">
-										<div className="flex flex-col gap-0.5">
-											<dt className="bp-caption">cpu</dt>
-											<dd className="text-sm tabular-nums text-foreground">{n.cpuCores}</dd>
-										</div>
-										<div className="flex flex-col gap-0.5">
-											<dt className="bp-caption">memory</dt>
-											<dd className="text-sm tabular-nums text-foreground">{formatMb(n.memoryMb)}</dd>
-										</div>
-										<div className="flex flex-col gap-0.5">
-											<dt className="bp-caption">disk</dt>
-											<dd className="text-sm tabular-nums text-foreground">{formatMb(n.diskMb)}</dd>
-										</div>
-									</dl>
-
-									<div className="flex items-center justify-between text-[10px] tabular-nums text-muted-foreground">
-										<span className="inline-flex items-center gap-1.5">
-											<PulseIcon
-												className={`size-3 ${now - n.lastHeartbeat < 60_000 ? "text-[var(--status-completed)]" : "text-muted-foreground"}`}
-												weight={now - n.lastHeartbeat < 60_000 ? "fill" : "regular"}
-											/>
-											<span className="bp-caption text-[10px] normal-case tracking-[0.04em]">
-												last heartbeat {relativeTimeIntl(n.lastHeartbeat, now)}
+										<div className="flex items-center justify-between text-[10px] tabular-nums text-muted-foreground">
+											<span className="inline-flex items-center gap-1.5">
+												<PulseIcon
+													className={`size-3 ${now - n.lastHeartbeat < 60_000 ? "text-[var(--status-completed)]" : "text-muted-foreground"}`}
+													weight={now - n.lastHeartbeat < 60_000 ? "fill" : "regular"}
+												/>
+												<span className="bp-caption text-[10px] normal-case tracking-[0.04em]">
+													last heartbeat {relativeTimeIntl(n.lastHeartbeat, now)}
+												</span>
 											</span>
-										</span>
+										</div>
+										<div className="flex items-end justify-between text-[10px] tabular-nums text-muted-foreground">
+											<span>id · {shortId(n._id)}</span>
+											<span className="inline-flex items-center gap-1 group-hover:text-primary">
+												inspect <ArrowRightIcon className="size-3 transition-transform group-hover:translate-x-0.5" />
+											</span>
+										</div>
 									</div>
-									<div className="flex items-end justify-between text-[10px] tabular-nums text-muted-foreground">
-										<span>id · {shortId(n._id)}</span>
-										<span className="inline-flex items-center gap-1 group-hover:text-primary">
-											inspect <ArrowRightIcon className="size-3 transition-transform group-hover:translate-x-0.5" />
-										</span>
+
+									{/* right: live metric graphs */}
+									<div className="group-hover:bg-muted/40">
+										<NodeMetrics nodeId={n._id} />
 									</div>
 								</Link>
 							))}
