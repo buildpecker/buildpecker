@@ -1,4 +1,4 @@
-export const GITHUB_REPO_REGEX = /^(?:git@github\.com:|https:\/\/github\.com\/)[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?\/[A-Za-z0-9_-]{1,100}(?:\.git)?\/?$/;
+export const GITHUB_REPO_REGEX = /^https:\/\/github\.com\/[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?\/[A-Za-z0-9_.-]+(?:\.git)?\/?$/;
 
 export function isValidGithubRepoUrl(url: string): boolean {
 	return GITHUB_REPO_REGEX.test(url.trim());

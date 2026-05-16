@@ -102,7 +102,7 @@ export default function NewNodePage() {
 							On the VPS running the forge node binary, run:
 						</p>
 						<pre className="overflow-x-auto border border-border bg-card/40 px-4 py-3 font-mono text-[11px] tabular-nums leading-relaxed">
-							<span className="text-muted-foreground">$</span> forge-node register --token{" "}
+							<span className="text-muted-foreground">$</span> forge-agent register{" "}
 							<span className="text-primary">{token ?? "<paste-token-here>"}</span>
 						</pre>
 						<p className="flex items-center gap-1.5 leading-relaxed text-muted-foreground">

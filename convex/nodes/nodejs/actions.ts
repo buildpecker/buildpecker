@@ -6,6 +6,7 @@ import { api, internal } from "../../_generated/api";
 import { Id } from "../../_generated/dataModel";
 import redis from "../../lib/redis";
 import { hash } from "node:crypto";
+import { exec } from "node:child_process";
 
 export const createRegistrationToken = action({
 	args: {},
@@ -32,7 +33,7 @@ export const registerNode = action({
 		diskMb: v.number(),
 		hostname: v.string(),
 	},
-	handler: async (ctx, args): Promise<{ nodeId: Id<"nodes">; nodeToken: string, userId: Id<"users"> }> => {
+	handler: async (ctx, args): Promise<{ nodeId: Id<"nodes">; nodeToken: string, userId: Id<"users">, tailscaleAuthKey: string, magicDnsSuffix: string }> => {
 		const userId = await redis.get(args.token) as Id<"users"> | null;
 		if (!userId) throw new Error("Invalid or expired token");
 
@@ -57,7 +58,36 @@ export const registerNode = action({
 
 		await redis.del(args.token);
 
-		return { userId, nodeId, nodeToken };
+		//tailscale create auth key
+		const res = await fetch(`https://api.tailscale.com/api/v2/tailnet/-/keys`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				"Authorization": `Bearer ${process.env.TAILSCALE_API_KEY!}`,
+			},
+			body: JSON.stringify({
+				"capabilities": {
+					"devices": {
+						"create": {
+							"reusable": false,
+							"ephemeral": false,
+							"preauthorized": true,
+							"tags": ["tag:forge-worker"]
+						}
+					}
+				},
+				"expirySeconds": 300
+			})
+		})
+
+		const resJson = await res.json();
+		const { key } = resJson;
+
+		return {
+			userId, nodeId, nodeToken,
+			tailscaleAuthKey: key as string,
+			magicDnsSuffix: process.env.TAILSCALE_MAGIC_DNS_SUFFIX!
+		};
 	}
 });
 

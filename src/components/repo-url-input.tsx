@@ -47,7 +47,7 @@ export function RepoUrlInput({
 			</div>
 			<p className={cn("text-[10px] tracking-[0.06em] text-muted-foreground", invalid && "text-destructive")}>
 				{empty
-					? "https:// or git@ url — public or private repository"
+					? "link to your public Git repository"
 					: valid
 						? "format ok — framework auto-detected after first deploy"
 						: "expected https://github.com/owner/repo or git@github.com:owner/repo"}
