@@ -6,7 +6,6 @@ import { api, internal } from "../../_generated/api";
 import { Id } from "../../_generated/dataModel";
 import redis from "../../lib/redis";
 import { hash } from "node:crypto";
-import { exec } from "node:child_process";
 
 export const createRegistrationToken = action({
 	args: {},
