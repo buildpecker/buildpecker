@@ -26,15 +26,26 @@ export default defineSchema({
 		diskMb: v.number(),
 		hostname: v.string(),
 		lastHeartbeat: v.number(),
+		cloudflareTunnelId: v.string(),
+		cloudflareTunnelToken: v.string(),
 	}).index("by_userId", ["userId"])
-		.index("by_tokenHash", ["tokenHash"]),
+		.index("by_tokenHash", ["tokenHash"])
+		.index("by_cloudflareTunnelId", ["cloudflareTunnelId"]),
 	deployments: defineTable({
 		name: v.string(),
 		nodeId: v.id("nodes"),
 		projectId: v.id("projects"),
+		publicUrl: v.string(),
 		imageUri: v.string(),
 		branch: v.string(),
-		status: v.union(v.literal("queued"), v.literal("processing"), v.literal("completed"), v.literal("failed")),
+		status: v.union(
+			v.literal("queued"),
+			v.literal("processing"),
+			v.literal("completed"),
+			v.literal("failed"),
+			v.literal("cancelled"),
+			v.literal("deleting"),
+		),
 		sha: v.string(),
 	}).index("by_nodeId", ["nodeId"])
 		.index("by_projectId", ["projectId"]),

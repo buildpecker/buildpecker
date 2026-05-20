@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-type DeploymentStatus = "queued" | "processing" | "completed" | "failed";
+type DeploymentStatus = "queued" | "processing" | "completed" | "failed" | "cancelled" | "deleting";
 
 const STATUS_CONFIG: Record<DeploymentStatus, { label: string; dotClass: string; ringClass: string; textClass: string }> = {
 	queued: {
@@ -25,6 +25,18 @@ const STATUS_CONFIG: Record<DeploymentStatus, { label: string; dotClass: string;
 	failed: {
 		label: "failed",
 		dotClass: "bg-[var(--status-failed)]",
+		ringClass: "border-[var(--status-failed)]/50",
+		textClass: "text-[var(--status-failed)]"
+	},
+	cancelled: {
+		label: "cancelled",
+		dotClass: "bg-muted-foreground/60",
+		ringClass: "border-muted-foreground/30",
+		textClass: "text-muted-foreground"
+	},
+	deleting: {
+		label: "deleting",
+		dotClass: "bg-[var(--status-failed)] animate-pulse",
 		ringClass: "border-[var(--status-failed)]/50",
 		textClass: "text-[var(--status-failed)]"
 	}

@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
@@ -46,7 +46,7 @@ function NewDeploymentForm() {
 	const user = useQuery(api.users.queries.current);
 	const projects = useQuery(api.projects.queries.getAllProjectsForUser, user ? { userId: user._id } : "skip");
 	const nodes = useQuery(api.nodes.queries.getAllNodesForUser, user ? { userId: user._id } : "skip");
-	const createDeployment = useMutation(api.deployments.mutations.createDeployment);
+	const createDeployment = useAction(api.deployments.actions.createDeployment);
 
 	const [projectId, setProjectId] = React.useState<Id<"projects"> | undefined>(presetProject ?? undefined);
 	const [nodeId, setNodeId] = React.useState<Id<"nodes"> | undefined>();
@@ -65,7 +65,7 @@ function NewDeploymentForm() {
 		try {
 			const idx = Math.floor(Math.random() * 5000);
 			const id = await createDeployment({
-				name: `${project?.name ?? "deploy"} · ${idx}`,
+				name: `${project?.name ?? "deploy"}-${idx}`,
 				projectId: projectId!,
 				nodeId: nodeId!,
 				branch,

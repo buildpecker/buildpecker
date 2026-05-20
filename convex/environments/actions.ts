@@ -1,7 +1,6 @@
 import { v } from "convex/values";
 import { action, httpAction } from "../_generated/server";
-import { internal } from "../_generated/api";
-import { decryptEnvVariable } from "./nodejs/actions";
+import { api, internal } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 
 export const createProjectSecrets = action({
@@ -44,6 +43,108 @@ export const createProjectSecrets = action({
 			)
 		);
 	},
+});
+
+export const addSecret = action({
+	args: {
+		projectId: v.id("projects"),
+		key: v.string(),
+		value: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const user = await ctx.runQuery(api.users.queries.current);
+		if (!user) throw new Error("Unauthorized");
+
+		const project = await ctx.runQuery(api.projects.queries.getProjectById, { id: args.projectId });
+		if (!project) throw new Error("Project not found");
+		if (project.ownerId !== user._id) throw new Error("Forbidden");
+
+		const key = args.key.trim();
+		if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
+			throw new Error("Invalid key: use letters, digits, underscores; must not start with a digit");
+		}
+
+		const existingEnvId = await ctx.runQuery(internal.environments.queries.getEnvByProjectId, { projectId: args.projectId });
+		const envId: Id<"environments"> = existingEnvId
+			?? (await ctx.runMutation(api.environments.mutations.createProjectEnvironment, { id: args.projectId }));
+
+		const encrypted = await ctx.runAction(internal.environments.nodejs.actions.encryptEnvVariable, {
+			key,
+			value: args.value,
+		});
+
+		await ctx.runMutation(internal.secrets.mutations.insertSecret, {
+			...encrypted,
+			environmentId: envId,
+		});
+	}
+});
+
+export const updateSecret = action({
+	args: {
+		id: v.id("secrets"),
+		key: v.string(),
+		value: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const user = await ctx.runQuery(api.users.queries.current);
+		if (!user) throw new Error("Unauthorized");
+
+		const found = await ctx.runQuery(internal.secrets.queries.getSecretWithOwnership, { id: args.id });
+		if (!found) throw new Error("Secret not found");
+		if (found.ownerId !== user._id) throw new Error("Forbidden");
+
+		const key = args.key.trim();
+		if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
+			throw new Error("Invalid key: use letters, digits, underscores; must not start with a digit");
+		}
+
+		const encrypted = await ctx.runAction(internal.environments.nodejs.actions.encryptEnvVariable, {
+			key,
+			value: args.value,
+		});
+
+		await ctx.runMutation(internal.secrets.mutations.patchSecretCrypto, {
+			id: args.id,
+			...encrypted,
+		});
+	}
+});
+
+export const deleteSecret = action({
+	args: { id: v.id("secrets") },
+	handler: async (ctx, args) => {
+		const user = await ctx.runQuery(api.users.queries.current);
+		if (!user) throw new Error("Unauthorized");
+
+		const found = await ctx.runQuery(internal.secrets.queries.getSecretWithOwnership, { id: args.id });
+		if (!found) throw new Error("Secret not found");
+		if (found.ownerId !== user._id) throw new Error("Forbidden");
+
+		await ctx.runMutation(internal.secrets.mutations.deleteSecretById, { id: args.id });
+	}
+});
+
+export const revealSecret = action({
+	args: { id: v.id("secrets") },
+	handler: async (ctx, args): Promise<{ key: string; value: string }> => {
+		const user = await ctx.runQuery(api.users.queries.current);
+		if (!user) throw new Error("Unauthorized");
+
+		const found = await ctx.runQuery(internal.secrets.queries.getSecretWithOwnership, { id: args.id });
+		if (!found) throw new Error("Secret not found");
+		if (found.ownerId !== user._id) throw new Error("Forbidden");
+
+		return await ctx.runAction(internal.environments.nodejs.actions.decryptEnvVariable, {
+			key: found.secret.key,
+			wrappedKey: found.secret.wrappedKey,
+			wrapIv: found.secret.wrapIv,
+			wrapTag: found.secret.wrapTag,
+			ciphertext: found.secret.ciphertext,
+			dataIv: found.secret.dataIv,
+			dataTag: found.secret.dataTag,
+		});
+	}
 });
 
 // TODO: Fix object level authorization

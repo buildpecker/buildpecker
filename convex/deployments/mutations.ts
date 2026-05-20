@@ -1,7 +1,8 @@
 import { v } from "convex/values";
 import { internalMutation, mutation } from "../_generated/server";
+import { getCurrentUser } from "../users/queries";
 
-export const createDeployment = mutation({
+export const insertDeployment = internalMutation({
 	args: {
 		name: v.string(),
 		nodeId: v.id("nodes"),
@@ -9,7 +10,8 @@ export const createDeployment = mutation({
 		status: v.union(v.literal("queued"), v.literal("processing"), v.literal("completed")),
 		branch: v.string(),
 		sha: v.string(),
-		imageUri: v.string()
+		imageUri: v.string(),
+		publicUrl: v.string(),
 	},
 	handler: async (ctx, args) => {
 		return await ctx.db.insert("deployments", {
@@ -19,7 +21,8 @@ export const createDeployment = mutation({
 			status: args.status,
 			branch: args.branch,
 			sha: args.sha,
-			imageUri: args.imageUri
+			imageUri: args.imageUri,
+			publicUrl: args.publicUrl
 		})
 	}
 });
@@ -39,3 +42,38 @@ export const setDeploymentStatus = internalMutation({
 		ctx.db.patch("deployments", row._id, { "status": args.status })
 	}
 })
+
+export const cancelQueuedDeployment = mutation({
+	args: { id: v.id("deployments") },
+	handler: async (ctx, args) => {
+		const user = await getCurrentUser(ctx);
+		if (!user) throw new Error("Unauthorized");
+
+		const dep = await ctx.db.get(args.id);
+		if (!dep) throw new Error("Deployment not found");
+
+		const project = await ctx.db.get(dep.projectId);
+		if (!project) throw new Error("Project not found");
+		if (project.ownerId !== user._id) throw new Error("Forbidden");
+
+		if (dep.status !== "queued") {
+			throw new Error(`Can only cancel queued deployments, got ${dep.status}`);
+		}
+
+		await ctx.db.patch(args.id, { status: "cancelled" });
+	}
+});
+
+export const markDeleting = internalMutation({
+	args: { id: v.id("deployments") },
+	handler: async (ctx, args) => {
+		await ctx.db.patch(args.id, { status: "deleting" });
+	}
+});
+
+export const purgeDeployment = internalMutation({
+	args: { id: v.id("deployments") },
+	handler: async (ctx, args) => {
+		await ctx.db.delete(args.id);
+	}
+});

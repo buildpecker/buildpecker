@@ -3,7 +3,8 @@
 import * as React from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useQuery } from "convex/react";
+import { useAction, useQuery } from "convex/react";
+import { useRouter } from "next/navigation";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { Topbar } from "@/components/app-shell/topbar";
@@ -11,6 +12,8 @@ import { Panel, PanelBody } from "@/components/blueprint/panel";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CopyToken } from "@/components/copy-token";
+import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
+import { SecretEditor } from "@/components/secret-editor";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState } from "@/components/empty-state";
 import { ArrowRightIcon, GithubLogoIcon, RocketLaunchIcon, CircleNotchIcon } from "@phosphor-icons/react";
@@ -18,9 +21,11 @@ import { relativeTime, shortId } from "@/lib/format";
 
 export default function ProjectDetailPage() {
 	const params = useParams<{ id: string }>();
+	const router = useRouter();
 	const projectId = params.id as Id<"projects">;
 	const project = useQuery(api.projects.queries.getProjectById, { id: projectId });
 	const deployments = useQuery(api.deployments.queries.getDeploymentsByProject, { projectId });
+	const deleteProject = useAction(api.projects.actions.deleteProject);
 
 	if (project === undefined) {
 		return (
@@ -191,25 +196,10 @@ export default function ProjectDetailPage() {
 					</TabsContent>
 
 					<TabsContent value="environment" className="pt-6">
-						<Panel tag="E" label="Environment vault" caption="encrypted at rest">
-							<PanelBody className="space-y-4 text-xs">
-								<p className="leading-relaxed text-muted-foreground">
-									Secrets are stored encrypted with AES-256-GCM (dual-layer: data key wrapped by master key).
-									Plaintext values are only released to the receiving node at deploy time.
-								</p>
-								<p className="leading-relaxed text-muted-foreground">
-									Per-project secret editing is read-only in this view — paste secrets at project creation,
-									or re-create the project to rotate them.
-								</p>
-								<div className="flex items-center gap-3 border border-dashed border-border bg-card/40 p-4">
-									<span className="bp-label">status</span>
-									<span className="text-foreground">vault initialised</span>
-								</div>
-							</PanelBody>
-						</Panel>
+						<EnvironmentTab projectId={project._id} />
 					</TabsContent>
 
-					<TabsContent value="settings" className="pt-6">
+					<TabsContent value="settings" className="space-y-6 pt-6">
 						<Panel tag="S" label="Settings">
 							<PanelBody className="space-y-3 text-xs text-muted-foreground">
 								<p>Identifiers and metadata. Most fields are immutable post-creation.</p>
@@ -217,9 +207,49 @@ export default function ProjectDetailPage() {
 								<CopyToken label="repo url" value={project.repoUrl} />
 							</PanelBody>
 						</Panel>
+						<Panel tag="DZ" label="Danger zone" caption="irreversible" className="border-destructive/40">
+							<PanelBody className="space-y-4 text-xs">
+								<div className="space-y-1">
+									<p className="text-foreground">Delete this project</p>
+									<p className="text-muted-foreground">
+										Removes the project, its environment vault, all secrets, and {sortedDeploys.length} deployment{sortedDeploys.length === 1 ? "" : "s"}. Cloudflare DNS and ingress routes are cleaned up.
+									</p>
+								</div>
+								<ConfirmDeleteDialog
+									resourceLabel="project"
+									resourceName={project.name}
+									description={
+										<>
+											Removes {sortedDeploys.length} deployment{sortedDeploys.length === 1 ? "" : "s"}, the encrypted secret vault, and any Cloudflare DNS records pointing at this project. This cannot be undone.
+										</>
+									}
+									onConfirm={() => deleteProject({ id: project._id })}
+									onSuccess={() => router.push("/projects")}
+								/>
+							</PanelBody>
+						</Panel>
 					</TabsContent>
 				</Tabs>
 			</div>
+		</div>
+	);
+}
+
+function EnvironmentTab({ projectId }: { projectId: Id<"projects"> }) {
+	return (
+		<div className="space-y-6">
+			<Panel tag="E" label="Environment vault" caption="encrypted at rest">
+				<PanelBody className="text-xs">
+					<p className="leading-relaxed text-muted-foreground">
+						Secrets are stored encrypted with AES-256-GCM (dual-layer: data key wrapped by master key).
+						Plaintext values are only released to the receiving node at deploy time, or to you on reveal.
+					</p>
+				</PanelBody>
+			</Panel>
+
+			<Panel tag="E2" label="Secrets" caption="click eye to reveal">
+				<SecretEditor projectId={projectId} />
+			</Panel>
 		</div>
 	);
 }

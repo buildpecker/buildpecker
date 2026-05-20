@@ -1,6 +1,42 @@
 import { v } from "convex/values";
 import { internalMutation } from "../_generated/server";
 
+export const clearSecretsForEnv = internalMutation({
+	args: { envId: v.id("environments") },
+	handler: async (ctx, args) => {
+		const secrets = await ctx.db.query("secrets")
+			.withIndex("by_envId", q => q.eq("environmentId", args.envId))
+			.collect();
+		for (const s of secrets) {
+			await ctx.db.delete(s._id);
+		}
+	}
+});
+
+export const deleteSecretById = internalMutation({
+	args: { id: v.id("secrets") },
+	handler: async (ctx, args) => {
+		await ctx.db.delete(args.id);
+	}
+});
+
+export const patchSecretCrypto = internalMutation({
+	args: {
+		id: v.id("secrets"),
+		key: v.string(),
+		wrappedKey: v.string(),
+		wrapIv: v.string(),
+		wrapTag: v.string(),
+		ciphertext: v.string(),
+		dataIv: v.string(),
+		dataTag: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const { id, ...rest } = args;
+		await ctx.db.patch(id, rest);
+	}
+});
+
 export const insertSecret = internalMutation({
 	args: {
 		environmentId: v.id("environments"),

@@ -3,22 +3,44 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { Topbar } from "@/components/app-shell/topbar";
 import { Panel, PanelBody, PanelFooter } from "@/components/blueprint/panel";
 import { StatusBadge } from "@/components/status-badge";
 import { CopyToken } from "@/components/copy-token";
+import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
-import { CircleNotchIcon, GithubLogoIcon, HardDrivesIcon, FolderIcon } from "@phosphor-icons/react";
+import { CircleNotchIcon, GithubLogoIcon, HardDrivesIcon, FolderIcon, ProhibitIcon } from "@phosphor-icons/react";
 import { relativeTime, shortId } from "@/lib/format";
 import { DeploymentLogStream } from "@/components/deployment-log-stream";
 
 export default function DeploymentDetailPage() {
 	const params = useParams<{ id: string }>();
+	const router = useRouter();
 	const id = params.id as Id<"deployments">;
 	const dep = useQuery(api.deployments.queries.getDeploymentById, { id });
+	const cancelDeployment = useMutation(api.deployments.mutations.cancelQueuedDeployment);
+	const deleteDeployment = useAction(api.deployments.actions.deleteDeployment);
+	const [cancelling, setCancelling] = React.useState(false);
+
+	const handleCancel = async () => {
+		setCancelling(true);
+		try {
+			await cancelDeployment({ id });
+			toast.success("deployment cancelled");
+		} catch (err) {
+			toast.error("failed to cancel", {
+				description: err instanceof Error ? err.message : String(err),
+			});
+		} finally {
+			setCancelling(false);
+		}
+	};
 
 	if (dep === undefined) {
 		return (
@@ -129,6 +151,36 @@ export default function DeploymentDetailPage() {
 						{dep.imageUri && <CopyToken label="image uri" value={dep.imageUri} />}
 					</PanelBody>
 				</Panel>
+
+				{(dep.status === "queued" || dep.status === "completed" || dep.status === "failed" || dep.status === "cancelled") && (
+					<Panel tag="DZ" label="Actions" caption={dep.status === "completed" ? "stops container" : "removes record"} className="border-destructive/40">
+						<PanelBody className="flex flex-wrap items-center gap-3 text-xs">
+							{dep.status === "queued" && (
+								<Button
+									variant="destructive"
+									size="sm"
+									onClick={handleCancel}
+									disabled={cancelling}
+								>
+									{cancelling ? <CircleNotchIcon className="size-3.5 animate-spin" /> : <ProhibitIcon className="size-3.5" />}
+									cancel
+								</Button>
+							)}
+							<ConfirmDeleteDialog
+								resourceLabel="deployment"
+								resourceName={dep.name}
+								triggerLabel={dep.status === "completed" ? "stop & delete" : "delete"}
+								description={
+									dep.status === "completed"
+										? <>Signals the agent on <code className="text-foreground">{dep.node?.name ?? "node"}</code> to stop the running container, then removes this record. This cannot be undone.</>
+										: <>Removes this deployment record. This cannot be undone.</>
+								}
+								onConfirm={() => deleteDeployment({ id })}
+								onSuccess={() => router.push("/deployments")}
+							/>
+						</PanelBody>
+					</Panel>
+				)}
 			</div>
 		</div>
 	);

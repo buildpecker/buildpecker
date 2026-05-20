@@ -3,7 +3,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useAction, useQuery } from "convex/react";
+import { useRouter } from "next/navigation";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { Topbar } from "@/components/app-shell/topbar";
@@ -11,6 +12,7 @@ import { Panel, PanelBody, PanelFooter } from "@/components/blueprint/panel";
 import { ResourceBar } from "@/components/resource-bar";
 import { StatusBadge } from "@/components/status-badge";
 import { CopyToken } from "@/components/copy-token";
+import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { HardDrivesIcon, ArrowRightIcon, CircleNotchIcon, PulseIcon } from "@phosphor-icons/react";
@@ -19,9 +21,11 @@ import { useNow } from "@/hooks/use-now";
 
 export default function NodeDetailPage() {
 	const params = useParams<{ id: string }>();
+	const router = useRouter();
 	const nodeId = params.id as Id<"nodes">;
 	const node = useQuery(api.nodes.queries.getNodeById, { id: nodeId });
 	const deployments = useQuery(api.deployments.queries.getDeploymentsByNode, { nodeId });
+	const deleteNode = useAction(api.nodes.actions.deleteNodeFromDashboard);
 	const now = useNow(1000);
 
 	if (node === undefined) {
@@ -157,6 +161,29 @@ export default function NodeDetailPage() {
 					<PanelBody className="space-y-3">
 						<CopyToken label="node id" value={node._id} />
 						<CopyToken label="token hash" value={node.tokenHash} masked />
+					</PanelBody>
+				</Panel>
+
+				<Panel tag="DZ" label="Danger zone" caption="irreversible" className="border-destructive/40">
+					<PanelBody className="space-y-4 text-xs">
+						<div className="space-y-1">
+							<p className="text-foreground">Deregister this node</p>
+							<p className="text-muted-foreground">
+								Tears down the Cloudflare tunnel, removes all DNS records pointing at it, drops the node record and {sortedDeploys.length} deployment record{sortedDeploys.length === 1 ? "" : "s"}. The agent on the host stays installed but will stop receiving work.
+							</p>
+						</div>
+						<ConfirmDeleteDialog
+							resourceLabel="node"
+							resourceName={node.name}
+							triggerLabel="deregister node"
+							description={
+								<>
+									Removes the Cloudflare tunnel, all routed DNS records, and {sortedDeploys.length} deployment record{sortedDeploys.length === 1 ? "" : "s"}. The agent binary on the VPS remains — uninstall it separately. This cannot be undone.
+								</>
+							}
+							onConfirm={() => deleteNode({ id: node._id })}
+							onSuccess={() => router.push("/nodes")}
+						/>
 					</PanelBody>
 				</Panel>
 			</div>

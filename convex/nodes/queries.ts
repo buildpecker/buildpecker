@@ -15,6 +15,16 @@ export const getNodeById = query({
 	handler: async (ctx, args) => await ctx.db.get(args.id),
 });
 
+export const getNodesByUserHostname = internalQuery({
+	args: { userId: v.id("users"), hostname: v.string() },
+	handler: async (ctx, args) => {
+		const nodes = await ctx.db.query("nodes")
+			.withIndex("by_userId", n => n.eq("userId", args.userId))
+			.collect();
+		return nodes.filter(n => n.hostname === args.hostname);
+	}
+});
+
 export const getNodeByNodeToken = internalQuery({
 	args: { tokenHash: v.string() },
 	handler: async (ctx, args) => {

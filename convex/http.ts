@@ -5,7 +5,7 @@ import type { WebhookEvent } from "@clerk/backend";
 import { Webhook } from "svix";
 
 import { deleteNode, setHeartbeatAction } from "../convex/nodes/actions"
-import { getQueuedDeploymentsAction, setDeploymentStatusAction } from "./deployments/actions";
+import { finalizeDeleteAction, getPendingDeletesAction, getQueuedDeploymentsAction, setDeploymentStatusAction } from "./deployments/actions";
 import { setProjectFrameworkAction } from "./projects/actions";
 import { getEnvironmentSecretsAction } from "./environments/actions";
 
@@ -56,6 +56,18 @@ http.route({
 	path: "/deployments/status",
 	method: "PATCH",
 	handler: setDeploymentStatusAction
+})
+
+http.route({
+	path: "/deployments/pending-deletes",
+	method: "POST",
+	handler: getPendingDeletesAction
+})
+
+http.route({
+	path: "/deployments/finalize-delete",
+	method: "POST",
+	handler: finalizeDeleteAction
 })
 
 http.route({

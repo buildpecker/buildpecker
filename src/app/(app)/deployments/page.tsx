@@ -13,7 +13,7 @@ import { PlusIcon, ArrowRightIcon, CircleNotchIcon, FunnelIcon } from "@phosphor
 import { relativeTime, shortId } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-const FILTERS = ["all", "queued", "processing", "completed"] as const;
+const FILTERS = ["all", "queued", "processing", "completed", "failed", "cancelled", "deleting"] as const;
 type Filter = (typeof FILTERS)[number];
 
 export default function DeploymentsListPage() {
@@ -33,7 +33,7 @@ export default function DeploymentsListPage() {
 	}, [deployments, filter]);
 
 	const counts = React.useMemo(() => {
-		const base = { all: deployments?.length ?? 0, queued: 0, processing: 0, completed: 0 };
+		const base = { all: deployments?.length ?? 0, queued: 0, processing: 0, completed: 0, failed: 0, cancelled: 0, deleting: 0 };
 		(deployments ?? []).forEach((d) => {
 			base[d.status]++;
 		});

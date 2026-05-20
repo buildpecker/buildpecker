@@ -16,6 +16,7 @@ import type * as environments_mutations from "../environments/mutations.js";
 import type * as environments_nodejs_actions from "../environments/nodejs/actions.js";
 import type * as environments_queries from "../environments/queries.js";
 import type * as http from "../http.js";
+import type * as lib_cfTunnel from "../lib/cfTunnel.js";
 import type * as lib_redis from "../lib/redis.js";
 import type * as nodes_actions from "../nodes/actions.js";
 import type * as nodes_metricsActions from "../nodes/metricsActions.js";
@@ -45,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   "environments/nodejs/actions": typeof environments_nodejs_actions;
   "environments/queries": typeof environments_queries;
   http: typeof http;
+  "lib/cfTunnel": typeof lib_cfTunnel;
   "lib/redis": typeof lib_redis;
   "nodes/actions": typeof nodes_actions;
   "nodes/metricsActions": typeof nodes_metricsActions;

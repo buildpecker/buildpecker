@@ -78,3 +78,18 @@ export const getQueuedDeployments = internalQuery({
 		return queued;
 	}
 })
+
+export const getDeletingDeployments = internalQuery({
+	args: { id: v.id("nodes") },
+	handler: async (ctx, args) => {
+		const rows = await ctx.db.query("deployments")
+			.withIndex("by_nodeId", n => n.eq("nodeId", args.id))
+			.collect();
+
+		const projects = await Promise.all(rows.map(async (dep) => await ctx.db.get(dep.projectId)));
+
+		const rowsWithProjects = rows.map((d, idx) => ({ ...d, project: projects[idx] }));
+
+		return rowsWithProjects.filter(d => d.status === "deleting");
+	}
+})
