@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { api, internal } from "../_generated/api";
 import { action, httpAction } from "../_generated/server";
 import { Id } from "../_generated/dataModel";
-import { applyIngressRule, ensureDnsCname } from "../lib/cfTunnel";
+import { applyIngressRule, ensureDnsCname, removeDnsCname, removeIngressRule } from "../lib/cfTunnel";
 
 const ROOT_DOMAIN = "parthajeet.xyz";
 
@@ -143,6 +143,29 @@ export const deleteDeployment = action({
 
 		if (dep.status === "processing" || dep.status === "deleting") {
 			throw new Error(`Cannot delete a deployment with status ${dep.status}`);
+		}
+
+		if (dep.publicUrl) {
+			const siblings = await ctx.runQuery(api.deployments.queries.getDeploymentsByProject, {
+				projectId: dep.projectId,
+			});
+			const stillUsingUrl = siblings.some(
+				s => s._id !== dep._id && s.publicUrl === dep.publicUrl && s.status !== "deleting",
+			);
+			if (!stillUsingUrl) {
+				try {
+					await removeDnsCname(dep.publicUrl);
+				} catch (err) {
+					console.error("cloudflare dns cleanup failed", err);
+				}
+				if (dep.node?.cloudflareTunnelId) {
+					try {
+						await removeIngressRule(dep.node.cloudflareTunnelId, dep.publicUrl);
+					} catch (err) {
+						console.error("cloudflare ingress cleanup failed", err);
+					}
+				}
+			}
 		}
 
 		if (dep.status === "completed") {
