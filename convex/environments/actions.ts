@@ -172,7 +172,7 @@ export const getEnvironmentSecretsAction = httpAction(async (ctx, req) => {
 	});
 
 	if (!envId) {
-		throw new Error("No environment id found")
+		return new Response(null, { status: 200 })
 	}
 
 	const secrets = await ctx.runQuery(internal.secrets.queries.getEnvSecrets, {
