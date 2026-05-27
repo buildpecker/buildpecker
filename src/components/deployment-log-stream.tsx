@@ -96,14 +96,17 @@ export function DeploymentLogStream({ deploymentId }: { deploymentId: string }) 
 							: "no output yet"}
 					</div>
 				)}
-				{entries.map((e, i) => (
-					<div key={`${e.t}-${i}`} className="flex gap-3 whitespace-pre-wrap break-all">
-						<span className="shrink-0 select-none text-muted-foreground/60 tabular-nums">
-							{formatNsTime(e.t)}
-						</span>
-						<span>{e.line}</span>
-					</div>
-				))}
+				{entries.map((e, i) => {
+					const { level, text } = parseLevel(e.line);
+					return (
+						<div key={`${e.t}-${i}`} className="flex gap-3 whitespace-pre-wrap break-all">
+							<span className="shrink-0 select-none text-muted-foreground/60 tabular-nums">
+								{formatNsTime(e.t)}
+							</span>
+							<span className={level ? LEVEL_CLASS[level] : undefined}>{text}</span>
+						</div>
+					);
+				})}
 				{state === "error" && errMsg && (
 					<div className="mt-2 text-[var(--status-failed,#e06b6b)]">
 						! {errMsg}
@@ -149,6 +152,32 @@ function labelFor(state: State): string {
 		case "closed":
 			return "disconnected";
 	}
+}
+
+type LogLevel = "error" | "warning" | "info" | "debug" | "success";
+
+const LEVEL_CLASS: Record<LogLevel, string> = {
+	error: "text-[var(--status-failed,#e06b6b)]",
+	warning: "text-amber-400",
+	info: "text-sky-400",
+	debug: "text-muted-foreground",
+	success: "text-[var(--status-completed,#3da471)]",
+};
+
+const LEVEL_RE = /\[(ERROR|ERR|WARNING|WARN|INFO|DEBUG|DBG|SUCCESS|OK)\]:?\s*/i;
+
+function parseLevel(line: string): { level: LogLevel | null; text: string } {
+	const m = LEVEL_RE.exec(line);
+	if (!m) return { level: null, text: line };
+	const tag = m[1].toUpperCase();
+	const level: LogLevel =
+		tag === "ERR" ? "error"
+		: tag === "WARN" ? "warning"
+		: tag === "DBG" ? "debug"
+		: tag === "OK" ? "success"
+		: (tag.toLowerCase() as LogLevel);
+	const text = (line.slice(0, m.index) + line.slice(m.index + m[0].length)).trimStart();
+	return { level, text };
 }
 
 const NS_PER_MS = BigInt(1_000_000);

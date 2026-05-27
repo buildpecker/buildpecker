@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import WebSocket from "ws";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -6,14 +7,14 @@ export const dynamic = "force-dynamic";
 const LOKI_URL =
 	process.env.LOKI_URL ?? "http://localhost:3100";
 
-const POLL_INTERVAL_MS = 1_000;
 const HEARTBEAT_MS = 5_000;
 const REPLAY_WINDOW_HOURS = 24;
 const FETCH_LIMIT = 1_000;
+const TAIL_RECONNECT_MS = 1_000;
 
 type LokiValue = [string, string] | [string, string, Record<string, string>];
 
-interface LokiResponse {
+interface LokiQueryRangeResponse {
 	status: string;
 	data: {
 		resultType: string;
@@ -22,6 +23,14 @@ interface LokiResponse {
 			values: LokiValue[];
 		}>;
 	};
+}
+
+interface LokiTailMessage {
+	streams?: Array<{
+		stream: Record<string, string>;
+		values: LokiValue[];
+	}>;
+	dropped_entries?: Array<{ labels: Record<string, string>; timestamp: string }>;
 }
 
 interface LogEntry {
@@ -50,7 +59,7 @@ async function fetchRange(
 	if (!res.ok) {
 		throw new Error(`loki ${res.status}: ${await res.text().catch(() => "")}`);
 	}
-	const body = (await res.json()) as LokiResponse;
+	const body = (await res.json()) as LokiQueryRangeResponse;
 
 	const entries: LogEntry[] = [];
 	for (const stream of body.data.result) {
@@ -60,6 +69,15 @@ async function fetchRange(
 	}
 	entries.sort((a, b) => (a.t < b.t ? -1 : a.t > b.t ? 1 : 0));
 	return entries;
+}
+
+function tailUrl(deploymentId: string, startNs: string): string {
+	const base = LOKI_URL.replace(/\/$/, "").replace(/^http/, "ws");
+	const url = new URL(base + "/loki/api/v1/tail");
+	url.searchParams.set("query", buildQuery(deploymentId));
+	url.searchParams.set("start", startNs);
+	url.searchParams.set("limit", String(FETCH_LIMIT));
+	return url.toString();
 }
 
 const NS_PER_MS = BigInt(1_000_000);
@@ -94,8 +112,9 @@ export async function GET(
 		async start(controller) {
 			let closed = false;
 			let cursor = hoursAgoNs(REPLAY_WINDOW_HOURS);
-			let poll: ReturnType<typeof setInterval> | undefined;
 			let heart: ReturnType<typeof setInterval> | undefined;
+			let ws: WebSocket | undefined;
+			let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
 
 			const write = (chunk: string) => {
 				if (closed) return;
@@ -113,8 +132,16 @@ export async function GET(
 			const teardown = () => {
 				if (closed) return;
 				closed = true;
-				if (poll) clearInterval(poll);
 				if (heart) clearInterval(heart);
+				if (reconnectTimer) clearTimeout(reconnectTimer);
+				if (ws) {
+					try {
+						ws.removeAllListeners();
+						ws.close();
+					} catch {
+						// noop
+					}
+				}
 				try {
 					controller.close();
 				} catch {
@@ -124,8 +151,48 @@ export async function GET(
 
 			req.signal.addEventListener("abort", teardown);
 
-			// flush headers immediately + tell browser to retry every 1s on drop
+			// flush headers + browser reconnect hint
 			write(`retry: 1000\n: connected\n\n`);
+
+			const openTail = (startNs: string) => {
+				if (closed) return;
+				const sock = new WebSocket(tailUrl(safeId, startNs));
+				ws = sock;
+
+				sock.on("message", raw => {
+					if (closed) return;
+					try {
+						const msg = JSON.parse(raw.toString()) as LokiTailMessage;
+						const entries: LogEntry[] = [];
+						for (const s of msg.streams ?? []) {
+							for (const v of s.values) {
+								entries.push({ t: v[0], line: v[1] });
+							}
+						}
+						if (entries.length === 0) return;
+						entries.sort((a, b) => (a.t < b.t ? -1 : a.t > b.t ? 1 : 0));
+						send("log", entries);
+						cursor = bumpNs(entries[entries.length - 1].t);
+					} catch (err) {
+						send("stream_error", {
+							message: err instanceof Error ? err.message : "tail parse failed",
+						});
+					}
+				});
+
+				sock.on("error", err => {
+					if (closed) return;
+					send("stream_error", {
+						message: err instanceof Error ? err.message : "tail socket error",
+					});
+				});
+
+				sock.on("close", () => {
+					if (closed) return;
+					// reconnect from last seen cursor
+					reconnectTimer = setTimeout(() => openTail(cursor), TAIL_RECONNECT_MS);
+				});
+			};
 
 			// 1) replay history
 			try {
@@ -145,22 +212,8 @@ export async function GET(
 				return;
 			}
 
-			// 2) tail loop — does NOT teardown on transient failure, just notifies
-			poll = setInterval(async () => {
-				if (closed) return;
-				try {
-					const fresh = await fetchRange(safeId, cursor, nowNs(), req.signal);
-					if (fresh.length > 0) {
-						send("log", fresh);
-						cursor = bumpNs(fresh[fresh.length - 1].t);
-					}
-				} catch (err) {
-					if (req.signal.aborted || closed) return;
-					send("stream_error", {
-						message: err instanceof Error ? err.message : "loki poll failed",
-					});
-				}
-			}, POLL_INTERVAL_MS);
+			// 2) live tail via Loki WebSocket
+			openTail(cursor);
 
 			// 3) heartbeat — SSE comment, keeps proxies/dev servers from idling out
 			heart = setInterval(() => write(`: keepalive\n\n`), HEARTBEAT_MS);
