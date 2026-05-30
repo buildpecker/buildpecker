@@ -34,7 +34,7 @@ export function CopyToken({
 	return (
 		<div
 			className={cn(
-				"bp-corners relative flex w-full min-w-0 items-stretch overflow-hidden border border-border bg-card",
+				"bp-corners relative flex min-w-0 border border-border bg-card",
 				className,
 			)}
 		>

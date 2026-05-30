@@ -204,7 +204,7 @@ export const setDeploymentStatusAction = httpAction(async (ctx, req) => {
 		await applyIngressRule(dep.node.cloudflareTunnelId, dep.publicUrl, `http://localhost:${localPort}`);
 	}
 
-	await ctx.runMutation(internal.deployments.mutations.setDeploymentStatus, {
+	await ctx.runMutation(api.deployments.mutations.setDeploymentStatus, {
 		id: id,
 		nodeId: node._id,
 		status: depStatus

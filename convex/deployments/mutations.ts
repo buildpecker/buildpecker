@@ -27,7 +27,7 @@ export const insertDeployment = internalMutation({
 	}
 });
 
-export const setDeploymentStatus = internalMutation({
+export const setDeploymentStatus = mutation({
 	args: {
 		nodeId: v.id("nodes"),
 		id: v.id("deployments"),

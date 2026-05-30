@@ -8,7 +8,7 @@ const LOKI_URL =
 	process.env.LOKI_URL ?? "http://localhost:3100";
 
 const HEARTBEAT_MS = 5_000;
-const REPLAY_WINDOW_HOURS = 24;
+const REPLAY_WINDOW_HOURS = 24 * 30;
 const FETCH_LIMIT = 1_000;
 const TAIL_RECONNECT_MS = 1_000;
 

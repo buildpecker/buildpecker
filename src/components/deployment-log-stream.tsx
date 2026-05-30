@@ -183,15 +183,18 @@ function parseLevel(line: string): { level: LogLevel | null; text: string } {
 const NS_PER_MS = BigInt(1_000_000);
 
 function formatNsTime(ns: string): string {
-	// ns string -> wall-clock HH:MM:SS.mmm
+	// ns string -> wall-clock YYYY-MM-DD HH:MM:SS.mmm
 	try {
 		const ms = Number(BigInt(ns) / NS_PER_MS);
 		const d = new Date(ms);
+		const yyyy = d.getFullYear();
+		const mo = String(d.getMonth() + 1).padStart(2, "0");
+		const dd = String(d.getDate()).padStart(2, "0");
 		const hh = String(d.getHours()).padStart(2, "0");
 		const mm = String(d.getMinutes()).padStart(2, "0");
 		const ss = String(d.getSeconds()).padStart(2, "0");
 		const mmm = String(d.getMilliseconds()).padStart(3, "0");
-		return `${hh}:${mm}:${ss}.${mmm}`;
+		return `${yyyy}-${mo}-${dd} ${hh}:${mm}:${ss}.${mmm}`;
 	} catch {
 		return "";
 	}

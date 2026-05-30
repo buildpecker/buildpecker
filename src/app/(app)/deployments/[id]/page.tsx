@@ -14,6 +14,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { CopyToken } from "@/components/copy-token";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
+import { ConfirmRedeployDialog } from "@/components/confirm-redeploy-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { CircleNotchIcon, GithubLogoIcon, HardDrivesIcon, FolderIcon, ProhibitIcon } from "@phosphor-icons/react";
 import { relativeTime, shortId } from "@/lib/format";
@@ -24,8 +25,10 @@ export default function DeploymentDetailPage() {
 	const router = useRouter();
 	const id = params.id as Id<"deployments">;
 	const dep = useQuery(api.deployments.queries.getDeploymentById, { id });
+	const redoDeploymentToQueued = useMutation(api.deployments.mutations.setDeploymentStatus);
 	const cancelDeployment = useMutation(api.deployments.mutations.cancelQueuedDeployment);
 	const deleteDeployment = useAction(api.deployments.actions.deleteDeployment);
+	const [redeploying, setRedeploying] = React.useState(false);
 	const [cancelling, setCancelling] = React.useState(false);
 
 	const handleCancel = async () => {
@@ -41,6 +44,15 @@ export default function DeploymentDetailPage() {
 			setCancelling(false);
 		}
 	};
+
+	const handleRedeploy = async (id: Id<"deployments">, nodeId: Id<"nodes">) => {
+		setRedeploying(true);
+		try {
+			await redoDeploymentToQueued({ id, nodeId, status: "queued" });
+		} finally {
+			setRedeploying(false);
+		}
+	}
 
 	if (dep === undefined) {
 		return (
@@ -153,7 +165,7 @@ export default function DeploymentDetailPage() {
 				</Panel>
 
 				{(dep.status === "queued" || dep.status === "completed" || dep.status === "failed" || dep.status === "cancelled") && (
-					<Panel tag="DZ" label="Actions" caption={dep.status === "completed" ? "stops container" : "removes record"} className="border-destructive/40">
+					<Panel tag="DZ" label="Actions" caption="deployment actions" className="border-destructive/40">
 						<PanelBody className="flex flex-wrap items-center gap-3 text-xs">
 							{dep.status === "queued" && (
 								<Button
@@ -178,6 +190,13 @@ export default function DeploymentDetailPage() {
 								onConfirm={() => deleteDeployment({ id })}
 								onSuccess={() => router.push("/deployments")}
 							/>
+							{(dep.status == "failed" || dep.status == "completed" || dep.status == "cancelled") && (
+								<ConfirmRedeployDialog
+									resourceName={dep.name}
+									disabled={redeploying}
+									onConfirm={() => handleRedeploy(dep._id, dep.nodeId)}
+								/>
+							)}
 						</PanelBody>
 					</Panel>
 				)}
