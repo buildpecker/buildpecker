@@ -13,6 +13,11 @@ export const insertDeployment = internalMutation({
 		sha: v.string(),
 		imageUri: v.string(),
 		publicUrl: v.string(),
+		routes: v.optional(v.array(v.object({
+			name: v.string(),
+			hostname: v.string(),
+			containerPort: v.number(),
+		}))),
 		type: v.union(v.literal("project"), v.literal("infra")),
 	},
 	handler: async (ctx, args) => {
@@ -26,7 +31,8 @@ export const insertDeployment = internalMutation({
 			branch: args.branch,
 			sha: args.sha,
 			imageUri: args.imageUri,
-			publicUrl: args.publicUrl
+			publicUrl: args.publicUrl,
+			routes: args.routes,
 		})
 	}
 });

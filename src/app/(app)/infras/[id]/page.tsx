@@ -28,9 +28,21 @@ import {
 	CubeIcon,
 	ArrowCounterClockwiseIcon,
 	RocketLaunchIcon,
+	PlusIcon,
+	TrashIcon,
 } from "@phosphor-icons/react";
 import { formatMb } from "@/lib/format";
 import { cn } from "@/lib/utils";
+
+function slugifyPreview(input: string): string {
+	return (
+		input
+			.toLowerCase()
+			.replace(/[^a-z0-9-]+/g, "-")
+			.replace(/-+/g, "-")
+			.replace(/^-+|-+$/g, "") || "container"
+	);
+}
 
 export default function InfraTemplateDetailPage() {
 	const params = useParams<{ id: string }>();
@@ -51,6 +63,9 @@ export default function InfraTemplateDetailPage() {
 	const [nodeId, setNodeId] = React.useState<Id<"nodes"> | undefined>();
 	const [envString, setEnvString] = React.useState("");
 	const [isPublic, setIsPublic] = React.useState(false);
+	const [publicPorts, setPublicPorts] = React.useState<{ name: string; containerPort: string }[]>([
+		{ name: "", containerPort: "" },
+	]);
 	const [deploying, setDeploying] = React.useState(false);
 
 	React.useEffect(() => {
@@ -91,7 +106,22 @@ export default function InfraTemplateDetailPage() {
 
 	const dirty = yaml !== null && yaml !== template.composeYaml;
 	const noNodes = nodes?.length === 0;
-	const ready = !!user && !!nodeId && containerName.trim() !== "" && yaml !== null;
+	const canBePublic = !!template.canBePublic;
+	const goingPublic = canBePublic && isPublic;
+	const validPorts = publicPorts
+		.map((p) => ({ name: p.name.trim(), containerPort: Number(p.containerPort) }))
+		.filter((p) => p.name !== "" && Number.isInteger(p.containerPort) && p.containerPort > 0);
+	const ready =
+		!!user &&
+		!!nodeId &&
+		containerName.trim() !== "" &&
+		yaml !== null &&
+		(!goingPublic || validPorts.length > 0);
+
+	const updatePort = (i: number, patch: Partial<{ name: string; containerPort: string }>) =>
+		setPublicPorts((prev) => prev.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
+	const addPort = () => setPublicPorts((prev) => [...prev, { name: "", containerPort: "" }]);
+	const removePort = (i: number) => setPublicPorts((prev) => prev.filter((_, idx) => idx !== i));
 
 	const handleDeploy = async () => {
 		if (!ready || !user || !nodeId || yaml === null) return;
@@ -108,7 +138,13 @@ export default function InfraTemplateDetailPage() {
 				const envId = await createInfraEnvironment({ id: containerId });
 				await createSecrets({ envId, envString, kind: "infra" });
 			}
-			const depId = await deployInfra({ nodeId, infraId: containerId, isPublic, status: "queued" });
+			const depId = await deployInfra({
+				nodeId,
+				infraId: containerId,
+				isPublic: goingPublic,
+				ports: goingPublic ? validPorts : undefined,
+				status: "queued",
+			});
 			toast.success("infra deployment queued");
 			router.push(`/deployments/${depId}`);
 		} catch (err) {
@@ -209,30 +245,79 @@ export default function InfraTemplateDetailPage() {
 										</SelectContent>
 									</Select>
 								</div>
-								<div className="flex flex-col gap-2">
-									<label className="bp-label">visibility</label>
-									<div className="flex items-center gap-px">
-										{([
-											["local", false, "Local to node — reachable only on the host"],
-											["public", true, "Public — routed to the internet via ingress"],
-										] as const).map(([label, val, hint]) => (
-											<button
-												key={label}
-												type="button"
-												onClick={() => setIsPublic(val)}
-												className={cn(
-													"flex-1 border border-border px-3 py-2 text-left text-[11px] transition-colors",
-													isPublic === val
-														? "border-primary bg-primary text-primary-foreground"
-														: "bg-card/30 text-muted-foreground hover:text-foreground",
-												)}
-											>
-												<span className="block text-[10px] tracking-[0.14em] uppercase">{label}</span>
-												<span className="block text-[10px] opacity-80">{hint}</span>
-											</button>
-										))}
+								{canBePublic ? (
+									<div className="flex flex-col gap-2">
+										<label className="bp-label">visibility</label>
+										<div className="flex items-center gap-px">
+											{([
+												["local", false, "Local to node — reachable only on the host"],
+												["public", true, "Public — one ingress route per exposed port"],
+											] as const).map(([label, val, hint]) => (
+												<button
+													key={label}
+													type="button"
+													onClick={() => setIsPublic(val)}
+													className={cn(
+														"flex-1 border border-border px-3 py-2 text-left text-[11px] transition-colors",
+														isPublic === val
+															? "border-primary bg-primary text-primary-foreground"
+															: "bg-card/30 text-muted-foreground hover:text-foreground",
+													)}
+												>
+													<span className="block text-[10px] tracking-[0.14em] uppercase">{label}</span>
+													<span className="block text-[10px] opacity-80">{hint}</span>
+												</button>
+											))}
+										</div>
+										{isPublic && (
+											<div className="flex flex-col gap-2 border border-dashed border-border bg-card/40 px-3 py-3">
+												<div className="flex items-center justify-between">
+													<span className="bp-label">ingress ports</span>
+													<span className="text-[10px] tracking-[0.14em] uppercase tabular-nums text-muted-foreground">
+														{validPorts.length} route{validPorts.length === 1 ? "" : "s"}
+													</span>
+												</div>
+												<p className="text-[10px] leading-relaxed text-muted-foreground">
+													Map a subdomain name to a container port from your compose. Each becomes <code className="text-foreground">{"["}name{"]"}-{slugifyPreview(containerName)}.parthajeet.xyz</code>.
+												</p>
+												{publicPorts.map((p, i) => (
+													<div key={i} className="flex items-center gap-2">
+														<Input
+															value={p.name}
+															onChange={(e) => updatePort(i, { name: e.target.value })}
+															placeholder="dashboard"
+															className="bg-card/60"
+														/>
+														<Input
+															value={p.containerPort}
+															onChange={(e) => updatePort(i, { containerPort: e.target.value.replace(/[^0-9]/g, "") })}
+															inputMode="numeric"
+															placeholder="6791"
+															className="w-28 bg-card/60 tabular-nums"
+														/>
+														<Button
+															type="button"
+															variant="ghost"
+															size="icon-sm"
+															onClick={() => removePort(i)}
+															disabled={publicPorts.length === 1}
+															aria-label="remove port"
+														>
+															<TrashIcon className="size-3.5" />
+														</Button>
+													</div>
+												))}
+												<Button type="button" variant="outline" size="sm" onClick={addPort} className="gap-1.5 self-start">
+													<PlusIcon className="size-3.5" /> add port
+												</Button>
+											</div>
+										)}
 									</div>
-								</div>
+								) : (
+									<div className="border border-dashed border-border bg-card/40 px-3 py-2 text-[11px] text-muted-foreground">
+										This template runs locally on the node and cannot be exposed publicly.
+									</div>
+								)}
 								<div className="flex flex-col gap-2">
 									<p className="text-[11px] leading-relaxed text-muted-foreground">
 										Optional KEY=VALUE pairs, one per line. Encrypted at rest with AES-256-GCM, injected into every service.

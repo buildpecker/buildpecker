@@ -16,29 +16,19 @@ import { cn } from "@/lib/utils";
 const FILTERS = ["all", "queued", "processing", "completed", "failed", "cancelled", "deleting"] as const;
 type Filter = (typeof FILTERS)[number];
 
+type DeploymentRow = NonNullable<ReturnType<typeof useQuery<typeof api.deployments.queries.getAllDeploymentsForUser>>>[number];
+
 export default function DeploymentsListPage() {
 	const user = useQuery(api.users.queries.current);
 	const deployments = useQuery(
 		api.deployments.queries.getAllDeploymentsForUser,
 		user ? { userId: user._id } : "skip"
 	);
-	const [filter, setFilter] = React.useState<Filter>("all");
 
 	const loading = !user || !deployments;
 
-	const filtered = React.useMemo(() => {
-		if (!deployments) return [];
-		if (filter === "all") return deployments;
-		return deployments.filter((d) => d.status === filter);
-	}, [deployments, filter]);
-
-	const counts = React.useMemo(() => {
-		const base = { all: deployments?.length ?? 0, queued: 0, processing: 0, completed: 0, failed: 0, cancelled: 0, deleting: 0 };
-		(deployments ?? []).forEach((d) => {
-			base[d.status]++;
-		});
-		return base;
-	}, [deployments]);
+	const projectDeps = (deployments ?? []).filter((d) => d.type !== "infra");
+	const infraDeps = (deployments ?? []).filter((d) => d.type === "infra");
 
 	return (
 		<div className="flex flex-col">
@@ -57,7 +47,7 @@ export default function DeploymentsListPage() {
 					<div className="flex items-center gap-3">
 						<span className="bp-label">queue · build log</span>
 						<div className="h-px flex-1 bg-border" />
-						<span className="bp-caption tabular-nums">{loading ? "—" : `${counts.all} total`}</span>
+						<span className="bp-caption tabular-nums">{loading ? "—" : `${deployments.length} total`}</span>
 					</div>
 					<h1 className="text-2xl font-medium tracking-[-0.01em] text-foreground">Deployments</h1>
 					<p className="max-w-xl text-xs leading-relaxed text-muted-foreground">
@@ -65,100 +55,180 @@ export default function DeploymentsListPage() {
 					</p>
 				</header>
 
-				<div className="flex items-center justify-between gap-3 border border-border bg-card/40 px-3 py-2">
-					<div className="flex items-center gap-1">
-						<FunnelIcon className="size-3 text-muted-foreground" />
-						<span className="bp-label">filter</span>
-					</div>
-					<div className="flex items-center gap-px">
-						{FILTERS.map((f) => (
-							<button
-								key={f}
-								type="button"
-								onClick={() => setFilter(f)}
-								className={cn(
-									"flex items-center gap-2 border border-border px-3 py-1 text-[10px] tracking-[0.14em] uppercase transition-colors",
-									filter === f
-										? "border-primary bg-primary text-primary-foreground"
-										: "bg-card/30 text-muted-foreground hover:text-foreground",
-								)}
-							>
-								<span>{f}</span>
-								<span className="tabular-nums">{counts[f]}</span>
-							</button>
-						))}
-					</div>
-				</div>
+				<DeploymentSection
+					tag="P"
+					sectionLabel="Project deployments"
+					kind="project"
+					rows={projectDeps}
+					loading={loading}
+				/>
 
-				<Panel tag="Q" label="Queue ledger" caption={`${filtered.length} rows`}>
-					{loading ? (
-						<PanelBody className="flex items-center justify-center py-16 text-muted-foreground">
-							<CircleNotchIcon className="size-4 animate-spin" />
-						</PanelBody>
-					) : filtered.length === 0 ? (
-						<PanelBody>
-							<EmptyState
-								title={filter === "all" ? "No deployments yet" : `No ${filter} deployments`}
-								description="Queue your first deploy by selecting a project and target node."
-								action={
-									<Button asChild size="sm">
-										<Link href="/deployments/new">new deployment</Link>
-									</Button>
-								}
-							/>
-						</PanelBody>
-					) : (
-						<table className="w-full text-xs">
-							<thead className="text-left">
-								<tr className="border-b border-border text-[10px] tracking-[0.14em] uppercase text-muted-foreground">
-									<th className="w-12 px-4 py-2.5 tabular-nums">#</th>
-									<th className="px-4 py-2.5">status</th>
-									<th className="px-4 py-2.5">deployment</th>
-									<th className="px-4 py-2.5">source</th>
+				<DeploymentSection
+					tag="I"
+					sectionLabel="Infrastructure deployments"
+					kind="infra"
+					rows={infraDeps}
+					loading={loading}
+				/>
+			</div>
+		</div>
+	);
+}
+
+function DeploymentSection({
+	tag,
+	sectionLabel,
+	kind,
+	rows,
+	loading,
+}: {
+	tag: string;
+	sectionLabel: string;
+	kind: "project" | "infra";
+	rows: DeploymentRow[];
+	loading: boolean;
+}) {
+	const [filter, setFilter] = React.useState<Filter>("all");
+
+	const counts = React.useMemo(() => {
+		const base = { all: rows.length, queued: 0, processing: 0, completed: 0, failed: 0, cancelled: 0, deleting: 0 };
+		rows.forEach((d) => {
+			base[d.status]++;
+		});
+		return base;
+	}, [rows]);
+
+	const filtered = filter === "all" ? rows : rows.filter((d) => d.status === filter);
+	const sourceHeader = kind === "infra" ? "template" : "project";
+
+	return (
+		<div className="space-y-3">
+			<div className="flex items-center justify-between gap-3 border border-border bg-card/40 px-3 py-2">
+				<div className="flex items-center gap-1">
+					<FunnelIcon className="size-3 text-muted-foreground" />
+					<span className="bp-label">{kind} filter</span>
+				</div>
+				<div className="flex items-center gap-px">
+					{FILTERS.map((f) => (
+						<button
+							key={f}
+							type="button"
+							onClick={() => setFilter(f)}
+							className={cn(
+								"flex items-center gap-2 border border-border px-3 py-1 text-[10px] tracking-[0.14em] uppercase transition-colors",
+								filter === f
+									? "border-primary bg-primary text-primary-foreground"
+									: "bg-card/30 text-muted-foreground hover:text-foreground",
+							)}
+						>
+							<span>{f}</span>
+							<span className="tabular-nums">{counts[f]}</span>
+						</button>
+					))}
+				</div>
+			</div>
+
+			<Panel tag={tag} label={sectionLabel} caption={`${filtered.length} rows`}>
+				{loading ? (
+					<PanelBody className="flex items-center justify-center py-16 text-muted-foreground">
+						<CircleNotchIcon className="size-4 animate-spin" />
+					</PanelBody>
+				) : filtered.length === 0 ? (
+					<PanelBody>
+						<EmptyState
+							title={
+								filter === "all"
+									? kind === "infra"
+										? "No infrastructure deployments"
+										: "No project deployments"
+									: `No ${filter} ${kind} deployments`
+							}
+							description={
+								kind === "infra"
+									? "Deploy a template from the Infrastructure catalog to a node."
+									: "Queue your first deploy by selecting a project and target node."
+							}
+							action={
+								<Button asChild size="sm">
+									<Link href={kind === "infra" ? "/infras" : "/deployments/new"}>
+										{kind === "infra" ? "browse templates" : "new deployment"}
+									</Link>
+								</Button>
+							}
+						/>
+					</PanelBody>
+				) : (
+					<table className="w-full text-xs">
+						<thead className="text-left">
+							<tr className="border-b border-border text-[10px] tracking-[0.14em] uppercase text-muted-foreground">
+								<th className="w-12 px-4 py-2.5 tabular-nums">#</th>
+								<th className="px-4 py-2.5">status</th>
+								<th className="px-4 py-2.5">deployment</th>
+								<th className="px-4 py-2.5">{sourceHeader}</th>
+								{kind === "infra" ? (
+									<th className="px-4 py-2.5">visibility</th>
+								) : (
 									<th className="px-4 py-2.5">branch</th>
-									<th className="px-4 py-2.5">created</th>
-									<th className="w-10 px-4 py-2.5" />
-								</tr>
-							</thead>
-							<tbody>
-								{filtered.map((d, i) => (
-									<tr key={d._id} className="border-b border-border/60 hover:bg-muted/30">
-										<td className="px-4 py-3 text-[10px] tabular-nums text-muted-foreground">
-											{String(i + 1).padStart(3, "0")}
-										</td>
-										<td className="px-4 py-3"><StatusBadge status={d.status} /></td>
-										<td className="px-4 py-3">
+								)}
+								<th className="px-4 py-2.5">created</th>
+								<th className="w-10 px-4 py-2.5" />
+							</tr>
+						</thead>
+						<tbody>
+							{filtered.map((d, i) => (
+								<tr key={d._id} className="border-b border-border/60 hover:bg-muted/30">
+									<td className="px-4 py-3 text-[10px] tabular-nums text-muted-foreground">
+										{String(i + 1).padStart(3, "0")}
+									</td>
+									<td className="px-4 py-3"><StatusBadge status={d.status} /></td>
+									<td className="px-4 py-3">
+										<div className="flex flex-col">
+											<span className="font-medium text-foreground">{d.name}</span>
+											<span className="bp-caption text-[10px]">{shortId(d._id)}</span>
+										</div>
+									</td>
+									<td className="px-4 py-3 text-muted-foreground">
+										{kind === "infra" ? (
 											<div className="flex flex-col">
-												<span className="font-medium text-foreground">{d.name}</span>
-												<span className="bp-caption text-[10px]">{shortId(d._id)}</span>
+												<span>{d.infra?.template?.name ?? <span className="text-muted-foreground/60">unknown</span>}</span>
+												{d.infra?.containerName && (
+													<span className="bp-caption text-[10px]">{d.infra.containerName}</span>
+												)}
 											</div>
-										</td>
+										) : (
+											d.project?.name ?? <span className="text-muted-foreground/60">unknown</span>
+										)}
+									</td>
+									{kind === "infra" ? (
 										<td className="px-4 py-3 text-muted-foreground">
-											{d.project?.name ?? d.infra?.containerName ?? (
-												<span className="text-muted-foreground/60">unknown</span>
+											{d.routes && d.routes.length > 0 ? (
+												<span className="text-[var(--status-completed)]">public · {d.routes.length}</span>
+											) : (
+												<span className="text-muted-foreground/60">local</span>
 											)}
 										</td>
+									) : (
 										<td className="px-4 py-3 text-muted-foreground tabular-nums">{d.branch || "—"}</td>
-										<td className="px-4 py-3 text-muted-foreground tabular-nums">{relativeTime(d._creationTime)}</td>
-										<td className="px-4 py-3">
-											<Link
-												href={`/deployments/${d._id}`}
-												className="inline-flex size-7 items-center justify-center border border-border text-muted-foreground hover:border-primary hover:text-primary"
-											>
-												<ArrowRightIcon className="size-3.5" />
-											</Link>
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					)}
-					<PanelFooter>
-						<span>section Q · queue ledger</span>
-						<span className="tabular-nums">{loading ? "—" : `${filtered.length}/${counts.all}`}</span>
-					</PanelFooter>
-				</Panel>
-			</div>
+									)}
+									<td className="px-4 py-3 text-muted-foreground tabular-nums">{relativeTime(d._creationTime)}</td>
+									<td className="px-4 py-3">
+										<Link
+											href={`/deployments/${d._id}`}
+											className="inline-flex size-7 items-center justify-center border border-border text-muted-foreground hover:border-primary hover:text-primary"
+										>
+											<ArrowRightIcon className="size-3.5" />
+										</Link>
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				)}
+				<PanelFooter>
+					<span>section {tag} · {kind} deployments</span>
+					<span className="tabular-nums">{loading ? "—" : `${filtered.length}/${counts.all}`}</span>
+				</PanelFooter>
+			</Panel>
 		</div>
 	);
 }

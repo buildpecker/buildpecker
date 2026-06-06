@@ -19,6 +19,10 @@ export const deployInfra = action({
 		nodeId: v.id("nodes"),
 		infraId: v.id("infraContainers"),
 		isPublic: v.boolean(),
+		ports: v.optional(v.array(v.object({
+			name: v.string(),
+			containerPort: v.number(),
+		}))),
 		status: v.union(v.literal("queued"), v.literal("processing"), v.literal("completed")),
 	},
 	handler: async (ctx, args): Promise<Id<"deployments">> => {
@@ -32,11 +36,18 @@ export const deployInfra = action({
 		if (!container) throw new Error("Infra container not found");
 		if (container.ownerId !== user._id) throw new Error("Forbidden");
 
-		let publicUrl = "";
+		const routes: { name: string; hostname: string; containerPort: number }[] = [];
+
 		if (args.isPublic) {
+			if (!container.template?.canBePublic) throw new Error("This template cannot be made public");
 			const slug = slugify(container.containerName) || args.infraId;
-			publicUrl = `${slug}.${ROOT_DOMAIN}`;
-			await ensureDnsCname(publicUrl, node.cloudflareTunnelId);
+			for (const port of args.ports ?? []) {
+				const name = slugify(port.name);
+				if (!name || port.containerPort <= 0) continue;
+				const hostname = `${name}-${slug}.${ROOT_DOMAIN}`;
+				await ensureDnsCname(hostname, node.cloudflareTunnelId);
+				routes.push({ name: port.name, hostname, containerPort: port.containerPort });
+			}
 		}
 
 		return await ctx.runMutation(internal.deployments.mutations.insertDeployment, {
@@ -48,7 +59,8 @@ export const deployInfra = action({
 			branch: "",
 			sha: "",
 			imageUri: "",
-			publicUrl,
+			publicUrl: "",
+			routes: routes.length > 0 ? routes : undefined,
 		});
 	},
 });

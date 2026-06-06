@@ -179,6 +179,20 @@ export default function DeploymentDetailPage() {
 					</Panel>
 				</div>
 
+				{dep.type === "infra" && dep.infra && (
+					<Panel tag="Y" label="Compose" caption="in use · this deployment">
+						<PanelBody>
+							<pre className="max-h-96 overflow-auto border border-border bg-card/60 p-3 font-mono text-[11px] leading-relaxed text-foreground">
+								{dep.infra.composeYaml}
+							</pre>
+						</PanelBody>
+						<PanelFooter>
+							<span>section Y · compose</span>
+							<span className="tabular-nums">{dep.infra.composeYaml.split("\n").length} lines</span>
+						</PanelFooter>
+					</Panel>
+				)}
+
 				<Panel tag="C" label="Build output" caption="logs · stream">
 					<DeploymentLogStream deploymentId={dep._id} />
 					<PanelFooter>
@@ -186,6 +200,26 @@ export default function DeploymentDetailPage() {
 						<span>loki · {dep._id.slice(0, 8)}</span>
 					</PanelFooter>
 				</Panel>
+
+				{dep.routes && dep.routes.length > 0 && (
+					<Panel tag="R" label="Public routes" caption="ingress · cloudflare">
+						<PanelBody className="space-y-2 text-xs">
+							{dep.routes.map((r) => (
+								<div key={r.hostname} className="flex items-center justify-between gap-3 border-b border-border/50 pb-1.5">
+									<a
+										href={`https://${r.hostname}`}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="font-medium text-foreground hover:underline underline-offset-2"
+									>
+										{r.hostname}
+									</a>
+									<span className="bp-label whitespace-nowrap">{r.name} · :{r.containerPort}</span>
+								</div>
+							))}
+						</PanelBody>
+					</Panel>
+				)}
 
 				<Panel tag="D" label="Identifiers">
 					<PanelBody className="space-y-3">

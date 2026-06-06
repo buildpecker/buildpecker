@@ -37,6 +37,7 @@ export default defineSchema({
 		version: v.string(),
 		logoUrl: v.string(),
 		composeYaml: v.string(),
+		canBePublic: v.optional(v.boolean()),
 	}),
 	infraContainers: defineTable({
 		nodeId: v.id("nodes"),
@@ -54,6 +55,11 @@ export default defineSchema({
 		projectId: v.optional(v.id("projects")),
 		infraId: v.optional(v.id("infraContainers")),
 		publicUrl: v.string(),
+		routes: v.optional(v.array(v.object({
+			name: v.string(),
+			hostname: v.string(),
+			containerPort: v.number(),
+		}))),
 		imageUri: v.string(),
 		branch: v.string(),
 		status: v.union(
