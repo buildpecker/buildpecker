@@ -114,7 +114,7 @@ export default function DeploymentsListPage() {
 									<th className="w-12 px-4 py-2.5 tabular-nums">#</th>
 									<th className="px-4 py-2.5">status</th>
 									<th className="px-4 py-2.5">deployment</th>
-									<th className="px-4 py-2.5">project</th>
+									<th className="px-4 py-2.5">source</th>
 									<th className="px-4 py-2.5">branch</th>
 									<th className="px-4 py-2.5">created</th>
 									<th className="w-10 px-4 py-2.5" />
@@ -134,9 +134,11 @@ export default function DeploymentsListPage() {
 											</div>
 										</td>
 										<td className="px-4 py-3 text-muted-foreground">
-											{d.project?.name ?? <span className="text-muted-foreground/60">unknown</span>}
+											{d.project?.name ?? d.infra?.containerName ?? (
+												<span className="text-muted-foreground/60">unknown</span>
+											)}
 										</td>
-										<td className="px-4 py-3 text-muted-foreground tabular-nums">{d.branch}</td>
+										<td className="px-4 py-3 text-muted-foreground tabular-nums">{d.branch || "—"}</td>
 										<td className="px-4 py-3 text-muted-foreground tabular-nums">{relativeTime(d._creationTime)}</td>
 										<td className="px-4 py-3">
 											<Link

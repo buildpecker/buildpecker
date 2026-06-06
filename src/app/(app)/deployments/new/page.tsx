@@ -68,6 +68,7 @@ function NewDeploymentForm() {
 				name: `${project?.name ?? "deploy"}-${idx}`,
 				projectId: projectId!,
 				nodeId: nodeId!,
+				type: "project",
 				branch,
 				sha: "",
 				imageUri: "",

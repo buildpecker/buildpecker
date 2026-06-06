@@ -6,18 +6,22 @@ export const insertDeployment = internalMutation({
 	args: {
 		name: v.string(),
 		nodeId: v.id("nodes"),
-		projectId: v.id("projects"),
+		projectId: v.optional(v.id("projects")),
+		infraId: v.optional(v.id("infraContainers")),
 		status: v.union(v.literal("queued"), v.literal("processing"), v.literal("completed")),
 		branch: v.string(),
 		sha: v.string(),
 		imageUri: v.string(),
 		publicUrl: v.string(),
+		type: v.union(v.literal("project"), v.literal("infra")),
 	},
 	handler: async (ctx, args) => {
 		return await ctx.db.insert("deployments", {
 			name: args.name,
+			type: args.type,
 			nodeId: args.nodeId,
 			projectId: args.projectId,
+			infraId: args.infraId,
 			status: args.status,
 			branch: args.branch,
 			sha: args.sha,
@@ -52,9 +56,13 @@ export const cancelQueuedDeployment = mutation({
 		const dep = await ctx.db.get(args.id);
 		if (!dep) throw new Error("Deployment not found");
 
-		const project = await ctx.db.get(dep.projectId);
-		if (!project) throw new Error("Project not found");
-		if (project.ownerId !== user._id) throw new Error("Forbidden");
+		const ownerId = dep.projectId
+			? (await ctx.db.get(dep.projectId))?.ownerId
+			: dep.infraId
+				? (await ctx.db.get(dep.infraId))?.ownerId
+				: undefined;
+		if (!ownerId) throw new Error("Deployment owner not found");
+		if (ownerId !== user._id) throw new Error("Forbidden");
 
 		if (dep.status !== "queued") {
 			throw new Error(`Can only cancel queued deployments, got ${dep.status}`);

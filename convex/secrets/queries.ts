@@ -1,10 +1,11 @@
 import { v } from "convex/values";
 import { internalQuery, query } from "../_generated/server";
 import { getCurrentUser } from "../users/queries";
+import { Id } from "../_generated/dataModel";
 
 export const getEnvSecrets = internalQuery({
 	args: {
-		envId: v.id("environments")
+		envId: v.union(v.id("environments"), v.id("infraEnvironments"))
 	},
 	handler: async (ctx, args) => {
 		return await ctx.db.query("secrets")
@@ -46,10 +47,21 @@ export const getSecretWithOwnership = internalQuery({
 	handler: async (ctx, args) => {
 		const secret = await ctx.db.get(args.id);
 		if (!secret) return null;
-		const env = await ctx.db.get(secret.environmentId);
-		if (!env) return null;
-		const project = await ctx.db.get(env.projectId);
-		if (!project) return null;
-		return { secret, ownerId: project.ownerId };
+		switch (secret.kind) {
+			case "project":
+				const envId: Id<"environments"> = secret.environmentId as Id<"environments">;
+				let env = await ctx.db.get(envId);
+				if (!env) return null;
+				let project = await ctx.db.get(env.projectId);
+				if (!project) return null;
+				return { secret, ownerId: project.ownerId };
+			case "infra":
+				const infraId: Id<"infraEnvironments"> = secret.environmentId as Id<"infraEnvironments">;
+				const infraEnv = await ctx.db.get(infraId);
+				if (!infraEnv) return null;
+				const infra = await ctx.db.get(infraEnv.infraId);
+				if (!infra) return null;
+				return { secret, ownerId: infra.ownerId };
+		}
 	}
 });

@@ -39,7 +39,7 @@ export const patchSecretCrypto = internalMutation({
 
 export const insertSecret = internalMutation({
 	args: {
-		environmentId: v.id("environments"),
+		environmentId: v.union(v.id("environments"), v.id("infraEnvironments")),
 		key: v.string(),
 		wrappedKey: v.string(),
 		wrapIv: v.string(),
@@ -47,6 +47,7 @@ export const insertSecret = internalMutation({
 		ciphertext: v.string(),
 		dataIv: v.string(),
 		dataTag: v.string(),
+		kind: v.union(v.literal("infra"), v.literal("project")),
 	},
 	handler: async (ctx, {
 		environmentId,
@@ -57,10 +58,12 @@ export const insertSecret = internalMutation({
 		ciphertext,
 		dataIv,
 		dataTag,
+		kind
 	}) => {
 		return await ctx.db.insert("secrets", {
 			environmentId: environmentId,
 			key: key,
+			kind: kind,
 			wrapIv: wrapIv,
 			wrappedKey: wrappedKey,
 			wrapTag: wrapTag,

@@ -25,10 +25,14 @@ export const getDeploymentById = query({
 		const dep = await ctx.db.get(args.id);
 		if (!dep) return null;
 		const [project, node] = await Promise.all([
-			ctx.db.get(dep.projectId),
+			dep.projectId ? ctx.db.get(dep.projectId) : Promise.resolve(null),
 			ctx.db.get(dep.nodeId),
 		]);
-		return { ...dep, project, node };
+		const container = dep.infraId ? await ctx.db.get(dep.infraId) : null;
+		const infra = container
+			? { ...container, template: await ctx.db.get(container.templateId) }
+			: null;
+		return { ...dep, project, node, infra };
 	}
 });
 
@@ -40,7 +44,7 @@ export const getAllDeploymentsForUser = query({
 			.collect();
 		const projectMap = new Map(projects.map(p => [p._id, p]));
 
-		const buckets = await Promise.all(
+		const projectBuckets = await Promise.all(
 			projects.map(p =>
 				ctx.db.query("deployments")
 					.withIndex("by_projectId", q => q.eq("projectId", p._id))
@@ -48,10 +52,34 @@ export const getAllDeploymentsForUser = query({
 			)
 		);
 
-		const all = buckets
-			.flat()
-			.map(d => ({ ...d, project: projectMap.get(d.projectId) }))
-			.sort((a, b) => b._creationTime - a._creationTime);
+		const containers = await ctx.db.query("infraContainers")
+			.withIndex("by_ownerId", c => c.eq("ownerId", args.userId))
+			.collect();
+		const templates = await Promise.all(containers.map(c => ctx.db.get(c.templateId)));
+		const infraMap = new Map(
+			containers.map((c, i) => [c._id, { ...c, template: templates[i] }]),
+		);
+
+		const infraBuckets = await Promise.all(
+			containers.map(c =>
+				ctx.db.query("deployments")
+					.withIndex("by_infraId", q => q.eq("infraId", c._id))
+					.collect()
+			)
+		);
+
+		const all = [
+			...projectBuckets.flat().map(d => ({
+				...d,
+				project: d.projectId ? projectMap.get(d.projectId) : undefined,
+				infra: undefined,
+			})),
+			...infraBuckets.flat().map(d => ({
+				...d,
+				project: undefined,
+				infra: d.infraId ? infraMap.get(d.infraId) : undefined,
+			})),
+		].sort((a, b) => b._creationTime - a._creationTime);
 
 		return all;
 	}
@@ -66,14 +94,16 @@ export const getQueuedDeployments = internalQuery({
 			.withIndex("by_nodeId", n => n.eq("nodeId", args.id))
 			.collect();
 
-		//project metadata
-		const projects = await Promise.all(rows.map(async (dep) => await ctx.db.get("projects", dep.projectId)));
+		const enriched = await Promise.all(rows.map(async (dep) => {
+			const project = dep.projectId ? await ctx.db.get(dep.projectId) : null;
+			const container = dep.infraId ? await ctx.db.get(dep.infraId) : null;
+			const infra = container
+				? { ...container, template: await ctx.db.get(container.templateId) }
+				: null;
+			return { ...dep, project, infra };
+		}));
 
-		const rowsWithProjects = rows.map((d, idx) => {
-			return { ...d, project: projects[idx] }
-		})
-
-		const queued = rowsWithProjects.filter(q => q.status === "queued");
+		const queued = enriched.filter(q => q.status === "queued");
 
 		return queued;
 	}
@@ -86,10 +116,15 @@ export const getDeletingDeployments = internalQuery({
 			.withIndex("by_nodeId", n => n.eq("nodeId", args.id))
 			.collect();
 
-		const projects = await Promise.all(rows.map(async (dep) => await ctx.db.get(dep.projectId)));
+		const enriched = await Promise.all(rows.map(async (dep) => {
+			const project = dep.projectId ? await ctx.db.get(dep.projectId) : null;
+			const container = dep.infraId ? await ctx.db.get(dep.infraId) : null;
+			const infra = container
+				? { ...container, template: await ctx.db.get(container.templateId) }
+				: null;
+			return { ...dep, project, infra };
+		}));
 
-		const rowsWithProjects = rows.map((d, idx) => ({ ...d, project: projects[idx] }));
-
-		return rowsWithProjects.filter(d => d.status === "deleting");
+		return enriched.filter(d => d.status === "deleting");
 	}
 })

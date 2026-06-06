@@ -13,3 +13,16 @@ export const getEnvByProjectId = internalQuery({
 		return res?._id;
 	}
 })
+
+export const getEnvByInfraId = internalQuery({
+	args: {
+		infraId: v.id("infraContainers"),
+	},
+	handler: async (ctx, args) => {
+		const res = await ctx.db.query("infraEnvironments")
+			.withIndex("by_infraId", q => q.eq("infraId", args.infraId))
+			.unique();
+
+		return res?._id;
+	}
+})

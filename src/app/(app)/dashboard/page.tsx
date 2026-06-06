@@ -115,7 +115,7 @@ export default function DashboardPage() {
 														{d.name}
 													</span>
 													<span className="bp-caption truncate text-[10px]">
-														{d.project?.name ?? "—"} · {d.branch}
+														{d.project?.name ?? d.infra?.containerName ?? "—"} · {d.branch || "infra"}
 													</span>
 												</div>
 											</div>

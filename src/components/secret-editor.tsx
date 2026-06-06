@@ -143,7 +143,7 @@ export function SecretEditor({ projectId }: { projectId: Id<"projects"> }) {
 		}
 		setSavingNew(true);
 		try {
-			await addAction({ projectId, key: newKey.trim(), value: newValue });
+			await addAction({ projectId, key: newKey.trim(), value: newValue, kind: "project" });
 			toast.success(`added ${newKey.trim()}`);
 			cancelAdd();
 		} catch (err) {

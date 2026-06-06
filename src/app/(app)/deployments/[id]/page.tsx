@@ -16,7 +16,7 @@ import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
 import { ConfirmRedeployDialog } from "@/components/confirm-redeploy-dialog";
 import { EmptyState } from "@/components/empty-state";
-import { CircleNotchIcon, GithubLogoIcon, HardDrivesIcon, FolderIcon, ProhibitIcon } from "@phosphor-icons/react";
+import { CircleNotchIcon, GithubLogoIcon, HardDrivesIcon, FolderIcon, ProhibitIcon, CubeIcon } from "@phosphor-icons/react";
 import { relativeTime, shortId } from "@/lib/format";
 import { DeploymentLogStream } from "@/components/deployment-log-stream";
 
@@ -99,34 +99,64 @@ export default function DeploymentDetailPage() {
 				</header>
 
 				<div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-					<Panel tag="A" label="Project">
-						{dep.project ? (
-							<PanelBody className="space-y-3 text-xs">
-								<div className="flex items-center gap-2">
-									<FolderIcon className="size-4 text-primary" />
-									<Link
-										href={`/projects/${dep.project._id}`}
-										className="font-medium text-foreground hover:underline underline-offset-2"
+					{dep.type === "infra" ? (
+						<Panel tag="A" label="Template">
+							{dep.infra ? (
+								<PanelBody className="space-y-3 text-xs">
+									<div className="flex items-center gap-2">
+										<CubeIcon className="size-4 text-primary" />
+										{dep.infra.template ? (
+											<Link
+												href={`/infras/${dep.infra.template._id}`}
+												className="font-medium text-foreground hover:underline underline-offset-2"
+											>
+												{dep.infra.template.name}
+											</Link>
+										) : (
+											<span className="font-medium text-foreground">unknown template</span>
+										)}
+										{dep.infra.template && (
+											<span className="border border-border px-1.5 py-0.5 text-[10px] tracking-[0.1em] tabular-nums text-muted-foreground">
+												{dep.infra.template.version}
+											</span>
+										)}
+									</div>
+									<Spec label="container" value={dep.infra.containerName} />
+								</PanelBody>
+							) : (
+								<PanelBody><EmptyState title="Infra removed" /></PanelBody>
+							)}
+						</Panel>
+					) : (
+						<Panel tag="A" label="Project">
+							{dep.project ? (
+								<PanelBody className="space-y-3 text-xs">
+									<div className="flex items-center gap-2">
+										<FolderIcon className="size-4 text-primary" />
+										<Link
+											href={`/projects/${dep.project._id}`}
+											className="font-medium text-foreground hover:underline underline-offset-2"
+										>
+											{dep.project.name}
+										</Link>
+									</div>
+									<a
+										href={dep.project.repoUrl}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
 									>
-										{dep.project.name}
-									</Link>
-								</div>
-								<a
-									href={dep.project.repoUrl}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
-								>
-									<GithubLogoIcon className="size-3.5" />
-									{dep.project.repoUrl.replace(/^https?:\/\//, "")}
-								</a>
-								<Spec label="framework" value={dep.project.framework || "unknown"} />
-								<Spec label="default branch" value={dep.project.defaultBranch} />
-							</PanelBody>
-						) : (
-							<PanelBody><EmptyState title="Project removed" /></PanelBody>
-						)}
-					</Panel>
+										<GithubLogoIcon className="size-3.5" />
+										{dep.project.repoUrl.replace(/^https?:\/\//, "")}
+									</a>
+									<Spec label="framework" value={dep.project.framework || "unknown"} />
+									<Spec label="default branch" value={dep.project.defaultBranch} />
+								</PanelBody>
+							) : (
+								<PanelBody><EmptyState title="Project removed" /></PanelBody>
+							)}
+						</Panel>
+					)}
 
 					<Panel tag="B" label="Target node">
 						{dep.node ? (

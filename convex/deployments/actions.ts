@@ -23,6 +23,7 @@ export const createDeployment = action({
 		branch: v.string(),
 		sha: v.string(),
 		imageUri: v.string(),
+		type: v.union(v.literal("project"), v.literal("infra"))
 	},
 	handler: async (ctx, args): Promise<Id<"deployments">> => {
 		const node = await ctx.runQuery(api.nodes.queries.getNodeById, { id: args.nodeId });
@@ -40,6 +41,7 @@ export const createDeployment = action({
 		return await ctx.runMutation(internal.deployments.mutations.insertDeployment, {
 			name: args.name,
 			nodeId: args.nodeId,
+			type: args.type,
 			projectId: args.projectId,
 			status: args.status,
 			branch: args.branch,
@@ -139,16 +141,19 @@ export const deleteDeployment = action({
 
 		const dep = await ctx.runQuery(api.deployments.queries.getDeploymentById, { id: args.id });
 		if (!dep) throw new Error("Deployment not found");
-		if (!dep.project || dep.project.ownerId !== user._id) throw new Error("Forbidden");
+		const ownerId = dep.project?.ownerId ?? dep.infra?.ownerId;
+		if (!ownerId || ownerId !== user._id) throw new Error("Forbidden");
 
 		if (dep.status === "processing" || dep.status === "deleting") {
 			throw new Error(`Cannot delete a deployment with status ${dep.status}`);
 		}
 
 		if (dep.publicUrl) {
-			const siblings = await ctx.runQuery(api.deployments.queries.getDeploymentsByProject, {
-				projectId: dep.projectId,
-			});
+			const siblings = dep.projectId
+				? await ctx.runQuery(api.deployments.queries.getDeploymentsByProject, {
+					projectId: dep.projectId,
+				})
+				: [];
 			const stillUsingUrl = siblings.some(
 				s => s._id !== dep._id && s.publicUrl === dep.publicUrl && s.status !== "deleting",
 			);
