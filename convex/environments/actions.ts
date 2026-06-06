@@ -3,10 +3,11 @@ import { action, httpAction } from "../_generated/server";
 import { api, internal } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 
-export const createProjectSecrets = action({
+export const createSecrets = action({
 	args: {
-		envId: v.id("environments"),
+		envId: v.union(v.id("environments"), v.id("infraEnvironments")),
 		envString: v.string(),
+		kind: v.union(v.literal("infra"), v.literal("project")),
 	},
 	handler: async (ctx, args) => {
 		const secrets = args.envString
@@ -38,6 +39,7 @@ export const createProjectSecrets = action({
 					{
 						...secret,
 						environmentId: args.envId,
+						kind: args.kind,
 					}
 				)
 			)
@@ -50,6 +52,7 @@ export const addSecret = action({
 		projectId: v.id("projects"),
 		key: v.string(),
 		value: v.string(),
+		kind: v.union(v.literal("infra"), v.literal("project")),
 	},
 	handler: async (ctx, args) => {
 		const user = await ctx.runQuery(api.users.queries.current);
@@ -76,6 +79,7 @@ export const addSecret = action({
 		await ctx.runMutation(internal.secrets.mutations.insertSecret, {
 			...encrypted,
 			environmentId: envId,
+			kind: args.kind,
 		});
 	}
 });
@@ -165,11 +169,15 @@ export const getEnvironmentSecretsAction = httpAction(async (ctx, req) => {
 	}
 
 	const body = await req.json();
-	const { projectId } = body;
+	const { projectId, infraId } = body;
 
-	const envId = await ctx.runQuery(internal.environments.queries.getEnvByProjectId, {
-		projectId: projectId as Id<"projects">,
-	});
+	const envId = infraId
+		? await ctx.runQuery(internal.environments.queries.getEnvByInfraId, {
+			infraId: infraId as Id<"infraContainers">,
+		})
+		: await ctx.runQuery(internal.environments.queries.getEnvByProjectId, {
+			projectId: projectId as Id<"projects">,
+		});
 
 	if (!envId) {
 		return new Response(null, { status: 200 })

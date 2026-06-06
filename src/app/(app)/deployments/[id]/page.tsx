@@ -16,7 +16,7 @@ import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
 import { ConfirmRedeployDialog } from "@/components/confirm-redeploy-dialog";
 import { EmptyState } from "@/components/empty-state";
-import { CircleNotchIcon, GithubLogoIcon, HardDrivesIcon, FolderIcon, ProhibitIcon } from "@phosphor-icons/react";
+import { CircleNotchIcon, GithubLogoIcon, HardDrivesIcon, FolderIcon, ProhibitIcon, CubeIcon } from "@phosphor-icons/react";
 import { relativeTime, shortId } from "@/lib/format";
 import { DeploymentLogStream } from "@/components/deployment-log-stream";
 
@@ -99,34 +99,64 @@ export default function DeploymentDetailPage() {
 				</header>
 
 				<div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-					<Panel tag="A" label="Project">
-						{dep.project ? (
-							<PanelBody className="space-y-3 text-xs">
-								<div className="flex items-center gap-2">
-									<FolderIcon className="size-4 text-primary" />
-									<Link
-										href={`/projects/${dep.project._id}`}
-										className="font-medium text-foreground hover:underline underline-offset-2"
+					{dep.type === "infra" ? (
+						<Panel tag="A" label="Template">
+							{dep.infra ? (
+								<PanelBody className="space-y-3 text-xs">
+									<div className="flex items-center gap-2">
+										<CubeIcon className="size-4 text-primary" />
+										{dep.infra.template ? (
+											<Link
+												href={`/infras/${dep.infra.template._id}`}
+												className="font-medium text-foreground hover:underline underline-offset-2"
+											>
+												{dep.infra.template.name}
+											</Link>
+										) : (
+											<span className="font-medium text-foreground">unknown template</span>
+										)}
+										{dep.infra.template && (
+											<span className="border border-border px-1.5 py-0.5 text-[10px] tracking-[0.1em] tabular-nums text-muted-foreground">
+												{dep.infra.template.version}
+											</span>
+										)}
+									</div>
+									<Spec label="container" value={dep.infra.containerName} />
+								</PanelBody>
+							) : (
+								<PanelBody><EmptyState title="Infra removed" /></PanelBody>
+							)}
+						</Panel>
+					) : (
+						<Panel tag="A" label="Project">
+							{dep.project ? (
+								<PanelBody className="space-y-3 text-xs">
+									<div className="flex items-center gap-2">
+										<FolderIcon className="size-4 text-primary" />
+										<Link
+											href={`/projects/${dep.project._id}`}
+											className="font-medium text-foreground hover:underline underline-offset-2"
+										>
+											{dep.project.name}
+										</Link>
+									</div>
+									<a
+										href={dep.project.repoUrl}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
 									>
-										{dep.project.name}
-									</Link>
-								</div>
-								<a
-									href={dep.project.repoUrl}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
-								>
-									<GithubLogoIcon className="size-3.5" />
-									{dep.project.repoUrl.replace(/^https?:\/\//, "")}
-								</a>
-								<Spec label="framework" value={dep.project.framework || "unknown"} />
-								<Spec label="default branch" value={dep.project.defaultBranch} />
-							</PanelBody>
-						) : (
-							<PanelBody><EmptyState title="Project removed" /></PanelBody>
-						)}
-					</Panel>
+										<GithubLogoIcon className="size-3.5" />
+										{dep.project.repoUrl.replace(/^https?:\/\//, "")}
+									</a>
+									<Spec label="framework" value={dep.project.framework || "unknown"} />
+									<Spec label="default branch" value={dep.project.defaultBranch} />
+								</PanelBody>
+							) : (
+								<PanelBody><EmptyState title="Project removed" /></PanelBody>
+							)}
+						</Panel>
+					)}
 
 					<Panel tag="B" label="Target node">
 						{dep.node ? (
@@ -149,6 +179,20 @@ export default function DeploymentDetailPage() {
 					</Panel>
 				</div>
 
+				{dep.type === "infra" && dep.infra && (
+					<Panel tag="Y" label="Compose" caption="in use · this deployment">
+						<PanelBody>
+							<pre className="max-h-96 overflow-auto border border-border bg-card/60 p-3 font-mono text-[11px] leading-relaxed text-foreground">
+								{dep.infra.composeYaml}
+							</pre>
+						</PanelBody>
+						<PanelFooter>
+							<span>section Y · compose</span>
+							<span className="tabular-nums">{dep.infra.composeYaml.split("\n").length} lines</span>
+						</PanelFooter>
+					</Panel>
+				)}
+
 				<Panel tag="C" label="Build output" caption="logs · stream">
 					<DeploymentLogStream deploymentId={dep._id} />
 					<PanelFooter>
@@ -156,6 +200,26 @@ export default function DeploymentDetailPage() {
 						<span>loki · {dep._id.slice(0, 8)}</span>
 					</PanelFooter>
 				</Panel>
+
+				{dep.routes && dep.routes.length > 0 && (
+					<Panel tag="R" label="Public routes" caption="ingress · cloudflare">
+						<PanelBody className="space-y-2 text-xs">
+							{dep.routes.map((r) => (
+								<div key={r.hostname} className="flex items-center justify-between gap-3 border-b border-border/50 pb-1.5">
+									<a
+										href={`https://${r.hostname}`}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="font-medium text-foreground hover:underline underline-offset-2"
+									>
+										{r.hostname}
+									</a>
+									<span className="bp-label whitespace-nowrap">{r.name} · :{r.containerPort}</span>
+								</div>
+							))}
+						</PanelBody>
+					</Panel>
+				)}
 
 				<Panel tag="D" label="Identifiers">
 					<PanelBody className="space-y-3">

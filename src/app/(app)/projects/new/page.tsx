@@ -19,7 +19,7 @@ export default function NewProjectPage() {
 	const user = useQuery(api.users.queries.current);
 	const createProject = useMutation(api.projects.mutations.createProject);
 	const createEnv = useMutation(api.environments.mutations.createProjectEnvironment);
-	const createSecrets = useAction(api.environments.actions.createProjectSecrets);
+	const createSecrets = useAction(api.environments.actions.createSecrets);
 
 	const [repoUrl, setRepoUrl] = React.useState("");
 	const [envString, setEnvString] = React.useState("");
@@ -43,7 +43,7 @@ export default function NewProjectPage() {
 			});
 			if (envString.trim() !== "") {
 				const envId = await createEnv({ id: projectId });
-				await createSecrets({ envId, envString });
+				await createSecrets({ envId, envString, kind: "project" });
 			}
 			toast.success(`project ${projectName} created`);
 			router.push(`/projects/${projectId}`);

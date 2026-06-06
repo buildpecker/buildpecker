@@ -31,11 +31,35 @@ export default defineSchema({
 	}).index("by_userId", ["userId"])
 		.index("by_tokenHash", ["tokenHash"])
 		.index("by_cloudflareTunnelId", ["cloudflareTunnelId"]),
+	infraTemplates: defineTable({
+		identifier: v.string(),
+		name: v.string(),
+		version: v.string(),
+		logoUrl: v.string(),
+		composeYaml: v.string(),
+		canBePublic: v.optional(v.boolean()),
+	}),
+	infraContainers: defineTable({
+		nodeId: v.id("nodes"),
+		ownerId: v.id("users"),
+		templateId: v.id("infraTemplates"),
+		containerName: v.string(),
+		composeYaml: v.string(),
+	})
+		.index("by_ownerId", ["ownerId"])
+		.index("by_nodeId", ["nodeId"]),
 	deployments: defineTable({
 		name: v.string(),
+		type: v.union(v.literal("project"), v.literal("infra")),
 		nodeId: v.id("nodes"),
-		projectId: v.id("projects"),
+		projectId: v.optional(v.id("projects")),
+		infraId: v.optional(v.id("infraContainers")),
 		publicUrl: v.string(),
+		routes: v.optional(v.array(v.object({
+			name: v.string(),
+			hostname: v.string(),
+			containerPort: v.number(),
+		}))),
 		imageUri: v.string(),
 		branch: v.string(),
 		status: v.union(
@@ -48,9 +72,11 @@ export default defineSchema({
 		),
 		sha: v.string(),
 	}).index("by_nodeId", ["nodeId"])
-		.index("by_projectId", ["projectId"]),
+		.index("by_projectId", ["projectId"])
+		.index("by_infraId", ["infraId"]),
 	secrets: defineTable({
-		environmentId: v.id("environments"),
+		environmentId: v.union(v.id("environments"), v.id("infraEnvironments")),
+		kind: v.union(v.literal("infra"), v.literal("project")),
 		key: v.string(),
 		ciphertext: v.string(),
 		wrappedKey: v.string(),
@@ -62,6 +88,10 @@ export default defineSchema({
 		.index("by_ciphertext", ["ciphertext"])
 		.index("by_envId", ["environmentId"])
 		.index("by_envId_key", ["environmentId", "key"]),
+	infraEnvironments: defineTable({
+		infraId: v.id("infraContainers"),
+	})
+		.index("by_infraId", ["infraId"]),
 	environments: defineTable({
 		projectId: v.id("projects"),
 	}).index("by_projectId", ["projectId"])

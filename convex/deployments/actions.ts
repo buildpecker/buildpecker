@@ -23,6 +23,7 @@ export const createDeployment = action({
 		branch: v.string(),
 		sha: v.string(),
 		imageUri: v.string(),
+		type: v.union(v.literal("project"), v.literal("infra"))
 	},
 	handler: async (ctx, args): Promise<Id<"deployments">> => {
 		const node = await ctx.runQuery(api.nodes.queries.getNodeById, { id: args.nodeId });
@@ -40,6 +41,7 @@ export const createDeployment = action({
 		return await ctx.runMutation(internal.deployments.mutations.insertDeployment, {
 			name: args.name,
 			nodeId: args.nodeId,
+			type: args.type,
 			projectId: args.projectId,
 			status: args.status,
 			branch: args.branch,
@@ -139,16 +141,36 @@ export const deleteDeployment = action({
 
 		const dep = await ctx.runQuery(api.deployments.queries.getDeploymentById, { id: args.id });
 		if (!dep) throw new Error("Deployment not found");
-		if (!dep.project || dep.project.ownerId !== user._id) throw new Error("Forbidden");
+		const ownerId = dep.project?.ownerId ?? dep.infra?.ownerId;
+		if (!ownerId || ownerId !== user._id) throw new Error("Forbidden");
 
 		if (dep.status === "processing" || dep.status === "deleting") {
 			throw new Error(`Cannot delete a deployment with status ${dep.status}`);
 		}
 
+		if (dep.routes && dep.routes.length > 0) {
+			for (const route of dep.routes) {
+				try {
+					await removeDnsCname(route.hostname);
+				} catch (err) {
+					console.error("cloudflare dns cleanup failed", err);
+				}
+				if (dep.node?.cloudflareTunnelId) {
+					try {
+						await removeIngressRule(dep.node.cloudflareTunnelId, route.hostname);
+					} catch (err) {
+						console.error("cloudflare ingress cleanup failed", err);
+					}
+				}
+			}
+		}
+
 		if (dep.publicUrl) {
-			const siblings = await ctx.runQuery(api.deployments.queries.getDeploymentsByProject, {
-				projectId: dep.projectId,
-			});
+			const siblings = dep.projectId
+				? await ctx.runQuery(api.deployments.queries.getDeploymentsByProject, {
+					projectId: dep.projectId,
+				})
+				: [];
 			const stillUsingUrl = siblings.some(
 				s => s._id !== dep._id && s.publicUrl === dep.publicUrl && s.status !== "deleting",
 			);
@@ -195,9 +217,23 @@ export const setDeploymentStatusAction = httpAction(async (ctx, req) => {
 	}
 
 	const body = await req.json();
-	const { id, status: depStatus, localPort } = body;
+	const { id, status: depStatus, localPort, portMap } = body;
 
-	if (typeof localPort === "number" && localPort > 0) {
+	if (Array.isArray(portMap) && portMap.length > 0) {
+		const dep = await ctx.runQuery(api.deployments.queries.getDeploymentById, { id });
+		if (!dep || !dep.node) throw new Error("Deployment or node not found");
+		if (dep.node._id !== node._id) throw new Error("Node mismatch for deployment");
+		const published = new Map<number, number>(
+			(portMap as { containerPort: number; publishedPort: number }[])
+				.map(p => [p.containerPort, p.publishedPort]),
+		);
+		for (const route of dep.routes ?? []) {
+			const hostPort = published.get(route.containerPort);
+			if (hostPort && hostPort > 0) {
+				await applyIngressRule(dep.node.cloudflareTunnelId, route.hostname, `http://localhost:${hostPort}`);
+			}
+		}
+	} else if (typeof localPort === "number" && localPort > 0) {
 		const dep = await ctx.runQuery(api.deployments.queries.getDeploymentById, { id });
 		if (!dep || !dep.node) throw new Error("Deployment or node not found");
 		if (dep.node._id !== node._id) throw new Error("Node mismatch for deployment");

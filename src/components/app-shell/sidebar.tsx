@@ -10,6 +10,7 @@ import {
 	RocketLaunchIcon,
 	GearSixIcon,
 	LightningIcon,
+	GraphIcon,
 } from "@phosphor-icons/react";
 import { UserButton } from "@clerk/nextjs";
 import { ThemeToggle } from "./theme-toggle";
@@ -26,9 +27,10 @@ type NavItem = {
 const NAV: NavItem[] = [
 	{ href: "/dashboard", label: "Dashboard", icon: GaugeIcon, tag: "00" },
 	{ href: "/projects", label: "Projects", icon: FolderIcon, tag: "01" },
-	{ href: "/nodes", label: "Nodes", icon: HardDrivesIcon, tag: "02" },
-	{ href: "/deployments", label: "Deployments", icon: RocketLaunchIcon, tag: "03" },
-	{ href: "/settings", label: "Settings", icon: GearSixIcon, tag: "04" },
+	{ href: "/infras", label: "Infrastructure", icon: GraphIcon, tag: "02" },
+	{ href: "/nodes", label: "Nodes", icon: HardDrivesIcon, tag: "03" },
+	{ href: "/deployments", label: "Deployments", icon: RocketLaunchIcon, tag: "04" },
+	{ href: "/settings", label: "Settings", icon: GearSixIcon, tag: "05" },
 ];
 
 export function AppSidebar() {
