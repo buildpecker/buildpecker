@@ -9,6 +9,7 @@
  */
 
 import type * as deployments_actions from "../deployments/actions.js";
+import type * as deployments_domains from "../deployments/domains.js";
 import type * as deployments_mutations from "../deployments/mutations.js";
 import type * as deployments_queries from "../deployments/queries.js";
 import type * as environments_actions from "../environments/actions.js";
@@ -47,6 +48,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "deployments/actions": typeof deployments_actions;
+  "deployments/domains": typeof deployments_domains;
   "deployments/mutations": typeof deployments_mutations;
   "deployments/queries": typeof deployments_queries;
   "environments/actions": typeof environments_actions;

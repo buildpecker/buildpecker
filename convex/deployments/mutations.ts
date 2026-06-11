@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { internal } from "../_generated/api";
 import { internalMutation, mutation } from "../_generated/server";
 import { getCurrentUser } from "../users/queries";
 
@@ -64,7 +65,11 @@ export const setDeploymentStatus = mutation({
 		if (!row || row.nodeId !== args.nodeId)
 			throw new Error(`No deployment with node id ${args.nodeId} and id ${args.id}`);
 
-		ctx.db.patch("deployments", row._id, { "status": args.status })
+		await ctx.db.patch("deployments", row._id, { "status": args.status })
+
+		if (row.customDomainUrl && row.status !== args.status) {
+			await ctx.scheduler.runAfter(0, internal.deployments.domains.syncCustomDomains, {});
+		}
 	}
 })
 

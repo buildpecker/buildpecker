@@ -158,6 +158,18 @@ export const deleteDeployment = action({
 			}
 		}
 
+		if (dep.customDomainUrl) {
+			await ctx.runMutation(internal.deployments.domains.setCustomDomainUrl, {
+				id: args.id,
+				customDomainUrl: undefined,
+			});
+			try {
+				await ctx.runAction(internal.deployments.domains.syncCustomDomains, {});
+			} catch (err) {
+				console.error("caddy custom-domain sync failed", err);
+			}
+		}
+
 		if (dep.publicUrl) {
 			const siblings = dep.projectId
 				? await ctx.runQuery(api.deployments.queries.getDeploymentsByProject, {

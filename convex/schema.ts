@@ -89,6 +89,7 @@ export default defineSchema({
 		projectId: v.optional(v.id("projects")),
 		infraId: v.optional(v.id("infraContainers")),
 		publicUrl: v.string(),
+		customDomainUrl: v.optional(v.string()),
 		routes: v.optional(v.array(v.object({
 			name: v.string(),
 			hostname: v.string(),

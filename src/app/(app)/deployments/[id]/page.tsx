@@ -14,6 +14,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { CopyToken } from "@/components/copy-token";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ConfirmRedeployDialog } from "@/components/confirm-redeploy-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { CircleNotchIcon, GithubLogoIcon, HardDrivesIcon, FolderIcon, ProhibitIcon, CubeIcon, PulseIcon, GlobeIcon, ArrowSquareOutIcon } from "@phosphor-icons/react";
@@ -221,17 +222,17 @@ export default function DeploymentDetailPage() {
 					</PanelFooter>
 				</Panel>
 
-				{dep.publicUrl && (
+				{(dep.customDomainUrl || dep.publicUrl) && (
 					<Panel tag="U" label="Public URL" caption="ingress · live">
 						<PanelBody className="text-xs">
 							<a
-								href={`https://${dep.publicUrl}`}
+								href={`https://${dep.customDomainUrl ?? dep.publicUrl}`}
 								target="_blank"
 								rel="noopener noreferrer"
 								className="group inline-flex items-center gap-2 font-medium text-foreground hover:text-primary"
 							>
 								<GlobeIcon className="size-4 text-primary" />
-								<span className="hover:underline underline-offset-2">{dep.publicUrl}</span>
+								<span className="hover:underline underline-offset-2">{dep.customDomainUrl ?? dep.publicUrl}</span>
 								<ArrowSquareOutIcon className="size-3.5 text-muted-foreground transition-colors group-hover:text-primary" />
 							</a>
 						</PanelBody>
@@ -240,6 +241,10 @@ export default function DeploymentDetailPage() {
 							<span className="tabular-nums">https</span>
 						</PanelFooter>
 					</Panel>
+				)}
+
+				{dep.status === "completed" && (
+					<CustomDomainPanel deploymentId={dep._id} current={dep.customDomainUrl} />
 				)}
 
 				{dep.routes && dep.routes.length > 0 && (
@@ -307,6 +312,100 @@ export default function DeploymentDetailPage() {
 				)}
 			</div>
 		</div>
+	);
+}
+
+function CustomDomainPanel({ deploymentId, current }: { deploymentId: Id<"deployments">; current?: string }) {
+	const setCustomDomain = useAction(api.deployments.domains.setCustomDomain);
+	const [value, setValue] = React.useState("");
+	const [saving, setSaving] = React.useState(false);
+
+	const host = (current ?? value).trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "") || "app.example.com";
+	const labels = host.split(".").filter(Boolean);
+	const recordName = labels.length <= 2 ? "@" : labels.slice(0, labels.length - 2).join(".");
+
+	const save = async (domain: string) => {
+		setSaving(true);
+		try {
+			await setCustomDomain({ id: deploymentId, customDomain: domain });
+			toast.success(domain.trim() ? "custom domain set" : "custom domain removed");
+			setValue("");
+		} catch (err) {
+			toast.error("failed to update domain", {
+				description: err instanceof Error ? err.message : String(err),
+			});
+		} finally {
+			setSaving(false);
+		}
+	};
+
+	return (
+		<Panel tag="X" label="Custom domain" caption="ingress · caddy">
+			<PanelBody className="space-y-3 text-xs">
+				{current && (
+					<div className="flex items-center justify-between gap-3 border-b border-border/50 pb-2">
+						<a
+							href={`https://${current}`}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="group inline-flex items-center gap-2 font-medium text-foreground hover:text-primary"
+						>
+							<GlobeIcon className="size-4 text-primary" />
+							<span className="hover:underline underline-offset-2">{current}</span>
+							<ArrowSquareOutIcon className="size-3.5 text-muted-foreground transition-colors group-hover:text-primary" />
+						</a>
+						<Button variant="ghost" size="sm" disabled={saving} onClick={() => save("")}>
+							remove
+						</Button>
+					</div>
+				)}
+				<div className="flex items-center gap-2">
+					<Input
+						value={value}
+						onChange={e => setValue(e.target.value)}
+						placeholder="app.example.com"
+						className="h-8 font-mono text-xs"
+						onKeyDown={e => {
+							if (e.key === "Enter" && value.trim() && !saving) save(value);
+						}}
+					/>
+					<Button size="sm" disabled={saving || !value.trim()} onClick={() => save(value)}>
+						{saving && <CircleNotchIcon className="size-3.5 animate-spin" />}
+						{current ? "update" : "add"}
+					</Button>
+				</div>
+				<div className="space-y-2">
+					<span className="bp-label">required dns record</span>
+					<div className="overflow-x-auto border border-border">
+						<table className="w-full border-collapse text-[11px]">
+							<thead>
+								<tr className="bg-card/60 text-muted-foreground">
+									<th className="px-2.5 py-1.5 text-left font-medium uppercase tracking-[0.08em]">Type</th>
+									<th className="px-2.5 py-1.5 text-left font-medium uppercase tracking-[0.08em]">Name</th>
+									<th className="px-2.5 py-1.5 text-left font-medium uppercase tracking-[0.08em]">Value</th>
+									<th className="px-2.5 py-1.5 text-left font-medium uppercase tracking-[0.08em]">TTL</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr className="border-t border-border font-mono text-foreground">
+									<td className="px-2.5 py-1.5">A</td>
+									<td className="px-2.5 py-1.5 break-all">{recordName}</td>
+									<td className="px-2.5 py-1.5 tabular-nums">82.197.73.103</td>
+									<td className="px-2.5 py-1.5">60</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<p className="bp-caption leading-relaxed">
+						use the name exactly as shown ({recordName === "@" ? "@ for the root domain" : `just ${recordName}, not the full domain`}); some providers like cloudflare also accept the full domain. SSL is provisioned automatically. <b className="text-foreground">It might take some time (~1 mins past TTL of 60 seconds) to update the DNS records.</b>
+					</p>
+				</div>
+			</PanelBody>
+			<PanelFooter>
+				<span>section X · custom domain</span>
+				<span className="tabular-nums">a · 82.197.73.103</span>
+			</PanelFooter>
+		</Panel>
 	);
 }
 

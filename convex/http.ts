@@ -10,6 +10,7 @@ import { setProjectFrameworkAction } from "./projects/actions";
 import { getEnvironmentSecretsAction } from "./environments/actions";
 import { getQueuedPostInstallAction, setPostInstallResultAction } from "./postinstall/actions";
 import { getInfraHealthChecksAction } from "./infra/health";
+import { authorizeDomainAction } from "./deployments/domains";
 
 const http = httpRouter();
 
@@ -112,6 +113,12 @@ http.route({
 	path: "/nodes/heartbeat",
 	method: "POST",
 	handler: setHeartbeatAction
+})
+
+http.route({
+	path: "/domains/authorize",
+	method: "GET",
+	handler: authorizeDomainAction
 })
 
 async function validateRequest(req: Request): Promise<WebhookEvent | null> {
