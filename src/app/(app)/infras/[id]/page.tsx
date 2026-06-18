@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
@@ -69,20 +70,19 @@ export default function InfraTemplateDetailPage() {
 	const [postInstall, setPostInstall] = React.useState<{ name: string; service: string; command: string }[] | null>(null);
 	const [healthCheck, setHealthCheck] = React.useState<{ service: string; command: string }>({ service: "", command: "" });
 	const [deploying, setDeploying] = React.useState(false);
+	const [nameSuffix] = React.useState(() => Math.floor(Math.random() * 5000));
 
-	React.useEffect(() => {
-		if (template && yaml === null) {
-			setYaml(template.composeYaml);
-			setContainerName(`${template.identifier}-${Math.floor(Math.random() * 5000)}`);
-			setPostInstall(
-				(template.postInstall ?? []).map((c) => ({ name: c.name, service: c.service, command: c.command })),
-			);
-			setHealthCheck({
-				service: template.healthCheck?.service ?? "",
-				command: template.healthCheck?.command ?? "",
-			});
-		}
-	}, [template, yaml]);
+	if (template && yaml === null) {
+		setYaml(template.composeYaml);
+		setContainerName(`${template.identifier}-${nameSuffix}`);
+		setPostInstall(
+			(template.postInstall ?? []).map((c) => ({ name: c.name, service: c.service, command: c.command })),
+		);
+		setHealthCheck({
+			service: template.healthCheck?.service ?? "",
+			command: template.healthCheck?.command ?? "",
+		});
+	}
 
 	if (template === undefined) {
 		return (
@@ -194,7 +194,7 @@ export default function InfraTemplateDetailPage() {
 					<div className="flex items-center gap-3">
 						<div className="flex size-11 items-center justify-center border border-border bg-card/60">
 							{template.logoUrl ? (
-								<img src={template.logoUrl} alt="" className="size-7 object-contain" />
+								<Image src={template.logoUrl} alt="" width={28} height={28} unoptimized className="size-7 object-contain" />
 							) : (
 								<CubeIcon className="size-5 text-muted-foreground" />
 							)}

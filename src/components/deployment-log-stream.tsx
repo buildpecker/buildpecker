@@ -18,10 +18,14 @@ export function DeploymentLogStream({ deploymentId }: { deploymentId: string }) 
 	const scrollRef = React.useRef<HTMLDivElement>(null);
 	const stickToBottom = React.useRef(true);
 
+	const [trackedId, setTrackedId] = React.useState(deploymentId);
+	if (trackedId !== deploymentId) {
+		setTrackedId(deploymentId);
+		setState("connecting");
+	}
+
 	React.useEffect(() => {
 		const es = new EventSource(`/api/deployments/${deploymentId}/logs`);
-
-		setState("connecting");
 
 		es.addEventListener("open", () => {
 			setState(prev => (prev === "live" ? "live" : "replaying"));

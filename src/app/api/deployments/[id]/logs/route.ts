@@ -112,6 +112,7 @@ export async function GET(
 		async start(controller) {
 			let closed = false;
 			let cursor = hoursAgoNs(REPLAY_WINDOW_HOURS);
+			// eslint-disable-next-line prefer-const
 			let heart: ReturnType<typeof setInterval> | undefined;
 			let ws: WebSocket | undefined;
 			let reconnectTimer: ReturnType<typeof setTimeout> | undefined;

@@ -50,9 +50,9 @@ export const getSecretWithOwnership = internalQuery({
 		switch (secret.kind) {
 			case "project":
 				const envId: Id<"environments"> = secret.environmentId as Id<"environments">;
-				let env = await ctx.db.get(envId);
+				const env = await ctx.db.get(envId);
 				if (!env) return null;
-				let project = await ctx.db.get(env.projectId);
+				const project = await ctx.db.get(env.projectId);
 				if (!project) return null;
 				return { secret, ownerId: project.ownerId };
 			case "infra":

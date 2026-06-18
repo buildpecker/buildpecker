@@ -1,7 +1,7 @@
 import { internal } from "../_generated/api";
-import { httpAction } from "../_generated/server";
+import { ActionCtx, httpAction } from "../_generated/server";
 
-async function authenticateNode(ctx: any, req: Request) {
+async function authenticateNode(ctx: ActionCtx, req: Request) {
 	const authHeader = req.headers.get("Authorization");
 	const nodeToken = authHeader?.split(" ")[1] ?? "";
 	if (!nodeToken) throw new Error("Unauthorized - No node token");

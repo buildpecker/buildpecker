@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Topbar } from "@/components/app-shell/topbar";
@@ -26,7 +27,7 @@ export default function InfrasPage() {
 					</div>
 					<h1 className="text-2xl font-medium tracking-[-0.01em] text-foreground">Infrastructure</h1>
 					<p className="max-w-xl text-xs leading-relaxed text-muted-foreground">
-						Pick a template to customize its compose and host on any node. Editing a template's compose only affects your own deployment.
+						Pick a template to customize its compose and host on any node. Editing a template&apos;s compose only affects your own deployment.
 					</p>
 				</header>
 
@@ -53,7 +54,7 @@ export default function InfrasPage() {
 									<div className="flex items-start justify-between gap-3">
 										<div className="flex size-11 items-center justify-center border border-border bg-card/60">
 											{t.logoUrl ? (
-												<img src={t.logoUrl} alt="" className="size-7 object-contain" />
+												<Image src={t.logoUrl} alt="" width={28} height={28} unoptimized className="size-7 object-contain" />
 											) : (
 												<CubeIcon className="size-5 text-muted-foreground" />
 											)}
