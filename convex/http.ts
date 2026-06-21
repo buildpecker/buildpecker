@@ -44,6 +44,20 @@ http.route({
 });
 
 http.route({
+	path: "/github-webhook",
+	method: "POST",
+	handler: httpAction(async (ctx, req) => {
+		try {
+			const payload: { repository: { html_url: string } } = await req.json();
+			await ctx.runMutation(internal.deployments.mutations.setDeploymentStatusViaProjectUrl, { htmlUrl: payload.repository.html_url })
+		} catch (err) {
+			return new Response(err instanceof Error ? err.message : `${err}`, { status: 400 })
+		}
+		return new Response(null, { status: 200 });
+	})
+})
+
+http.route({
 	path: "/nodes/delete-node",
 	method: "POST",
 	handler: deleteNode

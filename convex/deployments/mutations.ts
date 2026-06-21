@@ -53,6 +53,36 @@ export const insertDeployment = internalMutation({
 	}
 });
 
+export const setDeploymentStatusViaProjectUrl = internalMutation({
+	args: {
+		htmlUrl: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const projects = await ctx.db.query("projects")
+			.withIndex("by_repoUrl", p => p.eq("repoUrl", args.htmlUrl))
+			.collect();
+
+		const projectIds = projects.map(p => p._id)
+
+		const deploymentsArrays = await Promise.all(
+			projectIds.map((projectId) =>
+				ctx.db
+					.query("deployments")
+					.withIndex("by_projectId", (q) =>
+						q.eq("projectId", projectId)
+					)
+					.collect()
+			)
+		);
+
+		const deployments = deploymentsArrays.flat();
+		await Promise.all(
+			deployments.map((dep) => ctx.db.
+				patch("deployments", dep._id, { status: "queued" }))
+		)
+	}
+})
+
 export const setDeploymentStatus = mutation({
 	args: {
 		nodeId: v.id("nodes"),

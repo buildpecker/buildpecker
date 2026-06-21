@@ -33,7 +33,7 @@ export const registerNode = action({
 		diskMb: v.number(),
 		hostname: v.string(),
 	},
-	handler: async (ctx, args): Promise<{ nodeId: Id<"nodes">; nodeToken: string, userId: Id<"users">, tailscaleAuthKey: string, magicDnsSuffix: string, cloudflareTunnelId: string, cloudflareTunnelToken: string }> => {
+	handler: async (ctx, args): Promise<{ nodeId: Id<"nodes">; nodeToken: string, userId: Id<"users">, cloudflareTunnelId: string, cloudflareTunnelToken: string }> => {
 		const userId = await redis.get(args.token) as Id<"users"> | null;
 		if (!userId) throw new Error("Invalid or expired token");
 
@@ -100,35 +100,8 @@ export const registerNode = action({
 			}
 		}
 
-		//tailscale create auth key
-		const res = await fetch(`https://api.tailscale.com/api/v2/tailnet/-/keys`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				"Authorization": `Bearer ${process.env.TAILSCALE_API_KEY!}`,
-			},
-			body: JSON.stringify({
-				"capabilities": {
-					"devices": {
-						"create": {
-							"reusable": false,
-							"ephemeral": false,
-							"preauthorized": true,
-							"tags": ["tag:forge-worker"]
-						}
-					}
-				},
-				"expirySeconds": 300
-			})
-		})
-
-		const resJson = await res.json();
-		const { key } = resJson;
-
 		return {
 			userId, nodeId, nodeToken,
-			tailscaleAuthKey: key as string,
-			magicDnsSuffix: process.env.TAILSCALE_MAGIC_DNS_SUFFIX!,
 			cloudflareTunnelId: id as string,
 			cloudflareTunnelToken: token as string
 		};

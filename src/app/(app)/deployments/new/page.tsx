@@ -70,7 +70,6 @@ function NewDeploymentForm() {
 				nodeId: nodeId!,
 				type: "project",
 				branch,
-				sha: "",
 				imageUri: "",
 				status: "queued",
 			});

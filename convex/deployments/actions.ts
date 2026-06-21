@@ -14,7 +14,6 @@ export const createDeployment = action({
 		projectId: v.id("projects"),
 		status: v.union(v.literal("queued"), v.literal("processing"), v.literal("completed")),
 		branch: v.string(),
-		sha: v.string(),
 		imageUri: v.string(),
 		type: v.union(v.literal("project"), v.literal("infra"))
 	},
@@ -24,6 +23,12 @@ export const createDeployment = action({
 
 		const project = await ctx.runQuery(api.projects.queries.getProjectById, { id: args.projectId });
 		if (!project) throw new Error("Project not found");
+
+		const owner = project.repoUrl.split("/").at(-2);
+		const repo = project.repoUrl.split("/").at(-1)?.replace(".git", "");
+		const commits = await (await fetch(`https://api.github.com/repos/${owner}/${repo}/commits`)).json() as { sha: string }[];
+
+		const lastSha = commits[0].sha;
 
 		const tunnelId = node.cloudflareTunnelId;
 		const slug = generateDepName();
@@ -38,7 +43,7 @@ export const createDeployment = action({
 			projectId: args.projectId,
 			status: args.status,
 			branch: args.branch,
-			sha: args.sha,
+			sha: lastSha,
 			imageUri: args.imageUri,
 			publicUrl,
 		});

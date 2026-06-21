@@ -20,7 +20,8 @@ export default defineSchema({
 			name: v.string(),
 			command: v.string(),
 		}))),
-	}).index("by_ownerId", ["ownerId"]),
+	}).index("by_ownerId", ["ownerId"])
+		.index("by_repoUrl", ["repoUrl"]),
 	nodes: defineTable({
 		userId: v.id("users"),
 		tokenHash: v.string(),
