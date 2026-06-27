@@ -145,7 +145,7 @@ export default function InfraTemplateDetailPage() {
 	const removeCmd = (i: number) => setPostInstall((prev) => (prev ?? []).filter((_, idx) => idx !== i));
 
 	const validHealthCheck =
-		healthCheck.service.trim() !== "" && healthCheck.command.trim() !== ""
+		healthCheck.command.trim() !== ""
 			? { service: healthCheck.service.trim(), command: healthCheck.command.trim() }
 			: undefined;
 
@@ -154,7 +154,6 @@ export default function InfraTemplateDetailPage() {
 		setDeploying(true);
 		try {
 			const containerId = await createInfraContainer({
-				ownerId: user._id,
 				nodeId,
 				templateId: id,
 				containerName: containerName.trim(),
@@ -335,7 +334,7 @@ export default function InfraTemplateDetailPage() {
 							A command run periodically inside a compose service via <code className="text-foreground">docker compose exec</code>.
 							Exit code <code className="text-foreground">0</code> marks the deployment healthy (e.g.
 							<code className="text-foreground"> pg_isready</code>, <code className="text-foreground">redis-cli ping</code>).
-							Leave blank to skip health checks for non-probeable infra.
+							Leave the service blank to run the command on the host instead. Leave both blank to skip health checks for non-probeable infra.
 						</p>
 						<div className="flex items-center gap-2">
 							<Input
@@ -446,7 +445,7 @@ export default function InfraTemplateDetailPage() {
 													</span>
 												</div>
 												<p className="text-[10px] leading-relaxed text-muted-foreground">
-													Map a subdomain name to a container port from your compose. Each becomes <code className="text-foreground">{"["}name{"]"}-{slugifyPreview(containerName)}.parthajeet.xyz</code>.
+													Map a subdomain name to a <strong className="text-foreground">container port</strong> from your compose (not the host port). Each becomes <code className="text-foreground">{"["}name{"]"}-{slugifyPreview(containerName)}.buildpecker.com</code>.
 												</p>
 												{publicPorts.map((p, i) => (
 													<div key={i} className="flex items-center gap-2">

@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { api, internal } from "../_generated/api";
 import { action, httpAction, internalAction, internalMutation, internalQuery } from "../_generated/server";
 
-const CADDY_SYNC_URL = "https://caddy-dns.parthajeet.xyz/custom-domain";
+const CADDY_SYNC_URL = "https://caddy-dns.buildpecker.com/custom-domain";
 const CADDY_SYNC_SECRET = process.env.CADDY_SYNC_SECRET ?? "";
 
 const DOMAIN_RE = /^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/;

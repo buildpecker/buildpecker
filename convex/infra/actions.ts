@@ -4,7 +4,7 @@ import { action } from "../_generated/server";
 import { Id } from "../_generated/dataModel";
 import { ensureDnsCname } from "../lib/cfTunnel";
 
-const ROOT_DOMAIN = "parthajeet.xyz";
+const ROOT_DOMAIN = "buildpecker.com";
 
 function slugify(input: string): string {
 	return input
@@ -31,6 +31,7 @@ export const deployInfra = action({
 
 		const node = await ctx.runQuery(api.nodes.queries.getNodeById, { id: args.nodeId });
 		if (!node) throw new Error("No deployable node found!");
+		if (node.userId !== user._id) throw new Error("Forbidden");
 
 		const container = await ctx.runQuery(api.infra.queries.getInfraContainerById, { id: args.infraId });
 		if (!container) throw new Error("Infra container not found");

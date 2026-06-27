@@ -1,9 +1,9 @@
 import { v } from "convex/values";
 import { mutation } from "../_generated/server";
+import { getCurrentUser } from "../users/queries";
 
 export const createInfraContainer = mutation({
 	args: {
-		ownerId: v.id("users"),
 		nodeId: v.id("nodes"),
 		templateId: v.id("infraTemplates"),
 		containerName: v.string(),
@@ -21,8 +21,14 @@ export const createInfraContainer = mutation({
 		config: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
+		const user = await getCurrentUser(ctx);
+		if (!user) throw new Error("Unauthorized");
+
+		const node = await ctx.db.get(args.nodeId);
+		if (!node || node.userId !== user._id) throw new Error("Forbidden");
+
 		return await ctx.db.insert("infraContainers", {
-			ownerId: args.ownerId,
+			ownerId: user._id,
 			nodeId: args.nodeId,
 			templateId: args.templateId,
 			containerName: args.containerName,
@@ -38,6 +44,12 @@ export const createInfraContainer = mutation({
 export const createInfraEnvironment = mutation({
 	args: { id: v.id("infraContainers") },
 	handler: async (ctx, args) => {
+		const user = await getCurrentUser(ctx);
+		if (!user) throw new Error("Unauthorized");
+
+		const container = await ctx.db.get(args.id);
+		if (!container || container.ownerId !== user._id) throw new Error("Forbidden");
+
 		return await ctx.db.insert("infraEnvironments", {
 			infraId: args.id,
 		});

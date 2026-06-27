@@ -5,7 +5,7 @@ import { Id } from "../_generated/dataModel";
 import { applyIngressRule, ensureDnsCname, removeDnsCname, removeIngressRule } from "../lib/cfTunnel";
 import { generateDepName } from "../lib/generator";
 
-const ROOT_DOMAIN = "parthajeet.xyz";
+const ROOT_DOMAIN = "buildpecker.com";
 
 export const createDeployment = action({
 	args: {
@@ -18,11 +18,16 @@ export const createDeployment = action({
 		type: v.union(v.literal("project"), v.literal("infra"))
 	},
 	handler: async (ctx, args): Promise<Id<"deployments">> => {
+		const user = await ctx.runQuery(api.users.queries.current);
+		if (!user) throw new Error("Unauthorized");
+
 		const node = await ctx.runQuery(api.nodes.queries.getNodeById, { id: args.nodeId });
 		if (!node) throw new Error("No deployable node found!");
+		if (node.userId !== user._id) throw new Error("Forbidden");
 
 		const project = await ctx.runQuery(api.projects.queries.getProjectById, { id: args.projectId });
 		if (!project) throw new Error("Project not found");
+		if (project.ownerId !== user._id) throw new Error("Forbidden");
 
 		const owner = project.repoUrl.split("/").at(-2);
 		const repo = project.repoUrl.split("/").at(-1)?.replace(".git", "");
