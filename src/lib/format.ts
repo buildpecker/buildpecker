@@ -28,6 +28,17 @@ export function relativeTime(input: number | string | Date): string {
 	return date.toISOString().slice(0, 10);
 }
 
+export function compactDuration(ms: number): string {
+	const sec = Math.max(0, Math.round(ms / 1000));
+	if (sec < 60) return `${sec}s`;
+	const min = Math.floor(sec / 60);
+	if (min < 60) return `${min}m`;
+	const hr = Math.floor(min / 60);
+	if (hr < 24) return `${hr}h`;
+	const day = Math.floor(hr / 24);
+	return `${day}d`;
+}
+
 const rtfCache = new Map<string, Intl.RelativeTimeFormat>();
 function getRtf(locale?: string): Intl.RelativeTimeFormat {
 	const key = locale ?? "default";

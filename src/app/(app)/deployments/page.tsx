@@ -10,13 +10,55 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { StatusBadge } from "@/components/status-badge";
 import { PlusIcon, ArrowRightIcon, CircleNotchIcon, FunnelIcon } from "@phosphor-icons/react";
-import { relativeTime, shortId } from "@/lib/format";
+import { compactDuration, shortId } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const FILTERS = ["all", "queued", "processing", "completed", "failed", "cancelled", "deleting"] as const;
 type Filter = (typeof FILTERS)[number];
 
+const HEALTH_FRESH_MS = 90_000;
+
 type DeploymentRow = NonNullable<ReturnType<typeof useQuery<typeof api.deployments.queries.getAllDeploymentsForUser>>>[number];
+
+function useNow(intervalMs = 1000): number {
+	const [now, setNow] = React.useState(() => Date.now());
+	React.useEffect(() => {
+		const id = setInterval(() => setNow(Date.now()), intervalMs);
+		return () => clearInterval(id);
+	}, [intervalMs]);
+	return now;
+}
+
+function HealthTicker({ d, now }: { d: DeploymentRow; now: number }) {
+	if (d.status !== "completed") {
+		return <span className="text-muted-foreground/40">—</span>;
+	}
+	if (!d.infra?.healthCheck) {
+		return (
+			<span className="inline-flex items-center gap-1.5 text-muted-foreground/60">
+				<span className="size-1.5 rounded-full bg-muted-foreground/40" />
+				no probe
+			</span>
+		);
+	}
+	const healthy = now - d.lastHealthCheck <= HEALTH_FRESH_MS;
+	return (
+		<span
+			className={cn(
+				"inline-flex items-center gap-1.5 tabular-nums",
+				healthy ? "text-[var(--status-completed)]" : "text-[var(--status-failed)]",
+			)}
+		>
+			<span
+				className={cn(
+					"size-1.5 rounded-full",
+					healthy ? "animate-pulse bg-[var(--status-completed)]" : "bg-[var(--status-failed)]",
+				)}
+			/>
+			{healthy ? "healthy" : "stale"} · {compactDuration(now - d.lastHealthCheck)}
+		</span>
+	);
+}
 
 export default function DeploymentsListPage() {
 	const user = useQuery(api.users.queries.current);
@@ -89,6 +131,7 @@ function DeploymentSection({
 	loading: boolean;
 }) {
 	const [filter, setFilter] = React.useState<Filter>("all");
+	const now = useNow();
 
 	const counts = React.useMemo(() => {
 		const base = { all: rows.length, queued: 0, processing: 0, completed: 0, failed: 0, cancelled: 0, deleting: 0 };
@@ -170,7 +213,7 @@ function DeploymentSection({
 								) : (
 									<th className="px-4 py-2.5">branch</th>
 								)}
-								<th className="px-4 py-2.5">created</th>
+								<th className="px-4 py-2.5">health</th>
 								<th className="w-10 px-4 py-2.5" />
 							</tr>
 						</thead>
@@ -210,7 +253,7 @@ function DeploymentSection({
 									) : (
 										<td className="px-4 py-3 text-muted-foreground tabular-nums">{d.branch || "—"}</td>
 									)}
-									<td className="px-4 py-3 text-muted-foreground tabular-nums">{relativeTime(d._creationTime)}</td>
+									<td className="px-4 py-3"><HealthTicker d={d} now={now} /></td>
 									<td className="px-4 py-3">
 										<Link
 											href={`/deployments/${d._id}`}
