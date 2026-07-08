@@ -19,7 +19,7 @@ export default function DashboardPage() {
 	const user = useQuery(api.users.queries.current);
 	const projects = useQuery(api.projects.queries.getAllProjectsForUser, user ? { userId: user._id } : "skip");
 	const nodes = useQuery(api.nodes.queries.getAllNodesForUser, user ? { userId: user._id } : "skip");
-	const deployments = useQuery(api.deployments.queries.getAllDeploymentsForUser, user ? { userId: user._id } : "skip");
+	const deployments = useQuery(api.deployments.queries.getAllDeploymentsForUser, user ? {} : "skip");
 
 	const loading = !user || !projects || !nodes || !deployments;
 

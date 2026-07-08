@@ -21,9 +21,28 @@ const geistMono = Geist_Mono({
 	subsets: ["latin"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+const title = "Buildpecker — deploy to your own nodes";
+const description = "Vercel-class orchestration for the servers you actually own.";
+
 export const metadata: Metadata = {
-	title: "Buildpecker — deploy to your own nodes",
-	description: "Vercel-class orchestration for the servers you actually own.",
+	metadataBase: new URL(siteUrl),
+	title,
+	description,
+	openGraph: {
+		title,
+		description,
+		siteName: "Buildpecker",
+		type: "website",
+		url: siteUrl,
+		images: [{ url: "/og.png", width: 1200, height: 630, alt: title }],
+	},
+	twitter: {
+		card: "summary_large_image",
+		title,
+		description,
+		images: ["/og.png"],
+	},
 };
 
 export default function RootLayout({

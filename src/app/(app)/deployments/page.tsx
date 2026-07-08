@@ -64,7 +64,7 @@ export default function DeploymentsListPage() {
 	const user = useQuery(api.users.queries.current);
 	const deployments = useQuery(
 		api.deployments.queries.getAllDeploymentsForUser,
-		user ? { userId: user._id } : "skip"
+		user ? {} : "skip"
 	);
 
 	const loading = !user || !deployments;

@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import WebSocket from "ws";
 
 export const runtime = "nodejs";
@@ -100,6 +101,11 @@ export async function GET(
 	req: NextRequest,
 	{ params }: { params: Promise<{ id: string }> },
 ) {
+	const { userId } = await auth();
+	if (!userId) {
+		return new Response("unauthorized", { status: 401 });
+	}
+
 	const { id } = await params;
 	const safeId = id.replace(/[^A-Za-z0-9_-]/g, "");
 	if (!safeId) {

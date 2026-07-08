@@ -1,8 +1,13 @@
 import * as React from "react";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/app-shell/sidebar";
 import { PageStamp } from "@/components/app-shell/page-stamp";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+	const { userId } = await auth();
+	if (!userId) redirect("/sign-in");
+
 	return (
 		<div className="relative flex h-screen overflow-hidden">
 			<AppSidebar />
