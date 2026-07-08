@@ -34,14 +34,26 @@ export const metadata: Metadata = {
 		description,
 		siteName: "Buildpecker",
 		type: "website",
+		locale: "en_US",
 		url: siteUrl,
-		images: [{ url: "/og.png", width: 1200, height: 630, alt: title }],
+		images: [
+			{
+				url: "/og.png",
+				secureUrl: `${siteUrl}/og.png`,
+				width: 1200,
+				height: 630,
+				type: "image/png",
+				alt: title,
+			},
+		],
 	},
 	twitter: {
 		card: "summary_large_image",
+		site: "@buildpecker",
+		creator: "@buildpecker",
 		title,
 		description,
-		images: ["/og.png"],
+		images: [{ url: "/og.png", alt: title }],
 	},
 };
 
