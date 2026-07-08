@@ -3,7 +3,7 @@ import { AuthConfig } from "convex/server";
 export default {
 	providers: [
 		{
-			domain: "https://enabling-falcon-70.clerk.accounts.dev",
+			domain: process.env.CLERK_JWT_ISSUER_DOMAIN!,
 			applicationID: "convex",
 		},
 	]
