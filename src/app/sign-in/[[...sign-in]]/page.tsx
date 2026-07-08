@@ -155,14 +155,13 @@ export default function SignInPage() {
 								variables: {
 									colorPrimary: "var(--primary)",
 									colorBackground: "transparent",
-									colorText: "var(--foreground)",
-									colorTextSecondary: "var(--muted-foreground)",
-									colorInputBackground: "var(--background)",
-									colorInputText: "var(--foreground)",
+									colorForeground: "var(--foreground)",
+									colorMutedForeground: "var(--muted-foreground)",
+									colorInput: "var(--background)",
+									colorInputForeground: "var(--foreground)",
 									colorNeutral: "var(--muted-foreground)",
 									fontFamily: "var(--font-mono)",
 									borderRadius: "0",
-									spacingUnit: "0.25rem",
 								},
 							}}
 						/>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useSyncExternalStore } from "react";
 
 type Theme = "dark" | "light";
 
@@ -18,34 +18,39 @@ function readStoredTheme(): Theme {
 	return stored === "light" || stored === "dark" ? stored : "dark";
 }
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-	// Start with the same value the server renders ("dark") so the first client
-	// render matches the SSR-ed HTML, then sync from storage after mount.
-	const [theme, setThemeState] = useState<Theme>("dark");
+const listeners = new Set<() => void>();
 
-	useEffect(() => {
-		setThemeState(readStoredTheme());
-	}, []);
+function subscribe(onChange: () => void): () => void {
+	listeners.add(onChange);
+	window.addEventListener("storage", onChange);
+	return () => {
+		listeners.delete(onChange);
+		window.removeEventListener("storage", onChange);
+	};
+}
+
+function writeStoredTheme(next: Theme) {
+	if (typeof window !== "undefined") {
+		window.localStorage.setItem("buildpecker-theme", next);
+	}
+	listeners.forEach((listener) => listener());
+}
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+	// The server snapshot ("dark") matches the SSR-ed HTML; the client snapshot
+	// reads from storage, so React reconciles to the stored theme after hydration.
+	const theme = useSyncExternalStore(subscribe, readStoredTheme, () => "dark" as Theme);
 
 	useEffect(() => {
 		applyTheme(theme);
 	}, [theme]);
 
 	const setTheme = useCallback((next: Theme) => {
-		setThemeState(next);
-		if (typeof window !== "undefined") {
-			window.localStorage.setItem("buildpecker-theme", next);
-		}
+		writeStoredTheme(next);
 	}, []);
 
 	const toggle = useCallback(() => {
-		setThemeState((prev) => {
-			const next = prev === "dark" ? "light" : "dark";
-			if (typeof window !== "undefined") {
-				window.localStorage.setItem("buildpecker-theme", next);
-			}
-			return next;
-		});
+		writeStoredTheme(readStoredTheme() === "dark" ? "light" : "dark");
 	}, []);
 
 	return (
