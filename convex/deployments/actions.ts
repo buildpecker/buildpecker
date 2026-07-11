@@ -98,7 +98,7 @@ export const finalizeDeleteAction = httpAction(async (ctx, req) => {
 	const body = await req.json();
 	const { id } = body;
 
-	const dep = await ctx.runQuery(api.deployments.queries.getDeploymentById, { id });
+	const dep = await ctx.runQuery(internal.deployments.queries.getDeploymentByIdInternal, { id });
 	if (!dep || !dep.node) {
 		return new Response(JSON.stringify({ error: "not found" }), { status: 404 });
 	}
@@ -235,7 +235,7 @@ export const setDeploymentStatusAction = httpAction(async (ctx, req) => {
 	const { id, status: depStatus, localPort, portMap } = body;
 
 	if (Array.isArray(portMap) && portMap.length > 0) {
-		const dep = await ctx.runQuery(api.deployments.queries.getDeploymentById, { id });
+		const dep = await ctx.runQuery(internal.deployments.queries.getDeploymentByIdInternal, { id });
 		if (!dep || !dep.node) throw new Error("Deployment or node not found");
 		if (dep.node._id !== node._id) throw new Error("Node mismatch for deployment");
 		const published = new Map<number, number>(
@@ -249,8 +249,8 @@ export const setDeploymentStatusAction = httpAction(async (ctx, req) => {
 			}
 		}
 	} else if (typeof localPort === "number" && localPort > 0) {
-		const dep = await ctx.runQuery(api.deployments.queries.getDeploymentById, { id });
-		if (!dep || !dep.node) throw new Error("Deployment or node not found");
+		const dep = await ctx.runQuery(internal.deployments.queries.getDeploymentByIdInternal, { id });
+		if (!dep || !dep.node) throw new Error(`Deployment or node not found ${id} ${JSON.stringify(dep)}`);
 		if (dep.node._id !== node._id) throw new Error("Node mismatch for deployment");
 		await applyIngressRule(dep.node.cloudflareTunnelId, dep.publicUrl, `http://localhost:${localPort}`);
 	}

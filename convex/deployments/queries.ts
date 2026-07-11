@@ -49,6 +49,23 @@ export const getDeploymentById = query({
 	}
 });
 
+export const getDeploymentByIdInternal = internalQuery({
+	args: { id: v.id("deployments") },
+	handler: async (ctx, args) => {
+		const dep = await ctx.db.get(args.id);
+		if (!dep) return null;
+		const [project, node] = await Promise.all([
+			dep.projectId ? ctx.db.get(dep.projectId) : Promise.resolve(null),
+			ctx.db.get(dep.nodeId),
+		]);
+		const container = dep.infraId ? await ctx.db.get(dep.infraId) : null;
+		const infra = container
+			? { ...container, template: await ctx.db.get(container.templateId) }
+			: null;
+		return { ...dep, project, node, infra };
+	}
+});
+
 export const getAllDeploymentsForUser = query({
 	args: {},
 	handler: async (ctx) => {
