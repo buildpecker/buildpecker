@@ -4,7 +4,7 @@ Buildpecker is a self-hosted deployment platform. You connect your own servers, 
 Buildpecker deploys Git projects and infrastructure services to them. It gives each
 deployment a public URL, manages environment secrets, and watches health.
 
-![Buildpecker dashboard and deployment view](assets/buildpecker_on_buildpecker.png)
+![Buildpecker dashboard and deployment view](assets/buildpecker.png)
 
 Buildpecker has two parts:
 
